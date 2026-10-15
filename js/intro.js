@@ -39,19 +39,19 @@
   ];
 
   const RGB = {
-    warm: "244, 228, 204",
-    cool: "176, 214, 236",
-    gold: "228, 186, 106",
-    alkali: "224, 122, 104",
-    alkaline: "227, 161, 90",
-    transition: "226, 197, 107",
-    post: "156, 186, 122",
-    metalloid: "94, 184, 164",
-    nonmetal: "106, 174, 214",
-    halogen: "139, 150, 224",
-    noble: "176, 138, 212",
-    lanthanide: "224, 138, 160",
-    actinide: "210, 122, 144",
+    warm: "244, 232, 214",
+    cool: "214, 206, 196",
+    gold: "231, 181, 162",
+    alkali: "196, 85, 74",
+    alkaline: "196, 132, 58",
+    transition: "167, 132, 60",
+    post: "109, 140, 76",
+    metalloid: "47, 141, 132",
+    nonmetal: "61, 126, 174",
+    halogen: "93, 100, 182",
+    noble: "138, 98, 168",
+    lanthanide: "184, 93, 120",
+    actinide: "164, 90, 112",
   };
 
   function makeSprite(rgb) {
@@ -71,6 +71,11 @@
   function smooth(t) {
     const x = Math.max(0, Math.min(1, t));
     return x * x * (3 - 2 * x);
+  }
+
+  function easeOut(t) {
+    const x = Math.max(0, Math.min(1, t));
+    return 1 - Math.pow(1 - x, 3);
   }
 
   function bodyPoints(w, h) {
@@ -116,6 +121,7 @@
     this.sceneStart = performance.now();
     this.running = true;
     this.fading = false;
+    this.revealed = false;
     this.root.hidden = false;
     this.root.classList.remove("is-fading");
     this.resize();
@@ -161,8 +167,15 @@
     this.drawDots();
   };
 
+  StardustIntro.prototype.reveal = function reveal() {
+    if (this.revealed) return;
+    this.revealed = true;
+    if (this.opts && this.opts.onReveal) this.opts.onReveal();
+  };
+
   StardustIntro.prototype.finish = function finish() {
     if (this.fading) return;
+    this.reveal();
     this.fading = true;
     this.root.classList.add("is-fading");
     window.setTimeout(() => {
@@ -293,9 +306,10 @@
     }
     this.step(now);
     this.draw(now);
-      if (scene.id === "assemble") {
+    if (scene.id === "assemble") {
       const u = Math.max(0, Math.min(1, elapsed / scene.ms));
-      const fade = u < 0.78 ? 0 : (u - 0.78) / 0.22;
+      const fade = u < 0.72 ? 0 : (u - 0.72) / 0.28;
+      if (fade > 0) this.reveal();
       this.root.style.setProperty("--intro-fade", String(fade));
       this.root.style.pointerEvents = fade > 0.35 ? "none" : "auto";
     } else {
@@ -309,7 +323,7 @@
     const scene = SCENES[this.scene];
     const t = now / 1000;
     const u = Math.max(0, Math.min(1, (now - this.sceneStart) / scene.ms));
-    const e = smooth(Math.min(1, u / 0.72));
+    const e = easeOut(Math.min(1, u / 0.7));
     const lerpTargets = scene.id === "dust" || scene.id === "assemble" ? null : this.targetsFor(scene.id);
     const w = this.w;
     const h = this.h;
@@ -327,7 +341,7 @@
         return;
       }
       if (scene.id === "assemble") {
-        const ee = smooth(Math.min(1, u / 0.8));
+        const ee = easeOut(Math.min(1, u / 0.78));
         p.x = p.sx + (p.tx - p.sx) * ee;
         p.y = p.sy + (p.ty - p.sy) * ee;
         return;
@@ -345,23 +359,24 @@
     const h = this.h;
     const scene = SCENES[this.scene];
     const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, "#101820");
-    g.addColorStop(0.45, "#081116");
-    g.addColorStop(1, "#060c10");
+    g.addColorStop(0, "#1c1916");
+    g.addColorStop(0.48, "#141210");
+    g.addColorStop(1, "#0c0b09");
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
     ctx.save();
     ctx.translate(w * 0.55, h * 0.42);
-    ctx.rotate(-0.45);
+    ctx.rotate(-0.4);
     const band = ctx.createRadialGradient(0, 0, 10, 0, 0, w * 0.48);
-    band.addColorStop(0, "rgba(226, 198, 150, 0.16)");
-    band.addColorStop(0.45, "rgba(120, 150, 170, 0.05)");
+    band.addColorStop(0, "rgba(196, 92, 62, 0.16)");
+    band.addColorStop(0.42, "rgba(244, 220, 196, 0.05)");
     band.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = band;
     ctx.fillRect(-w, -h * 0.28, w * 2, h * 0.56);
     ctx.restore();
+    this.drawOrnament(now, scene);
 
     ctx.globalCompositeOperation = "lighter";
     const u = Math.max(0, Math.min(1, (now - this.sceneStart) / scene.ms));
@@ -379,6 +394,88 @@
     });
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
+    if (scene.id === "dust") this.drawStreaks();
+  };
+
+  StardustIntro.prototype.drawOrnament = function drawOrnament(now, scene) {
+    const ctx = this.ctx;
+    const w = this.w;
+    const h = this.h;
+    const u = Math.max(0, Math.min(1, (now - this.sceneStart) / scene.ms));
+    ctx.save();
+    ctx.lineCap = "round";
+    if (scene.id === "bang") {
+      const rings = [0.16, 0.28, 0.42];
+      rings.forEach((scale, index) => {
+        const radius = easeOut(Math.min(1, u * 1.3 - index * 0.08)) * Math.min(w, h) * scale;
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(231, 181, 162, ${0.28 - index * 0.07})`;
+        ctx.lineWidth = 1.25;
+        ctx.arc(w * 0.5, h * 0.48, Math.max(1, radius), 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    } else if (scene.id === "star") {
+      const centers = [
+        [0.3, 0.5],
+        [0.5, 0.42],
+        [0.72, 0.54],
+      ];
+      centers.forEach((c, index) => {
+        const x = w * c[0];
+        const y = h * c[1];
+        const spin = now / 900 + index;
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(231, 181, 162, 0.45)";
+        ctx.lineWidth = 1.4;
+        ctx.arc(x, y, 28 + index * 10, spin, spin + 1.7);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(246, 241, 232, 0.2)";
+        ctx.arc(x, y, 48 + index * 6, -spin * 0.6, -spin * 0.6 + 1.1);
+        ctx.stroke();
+      });
+    } else if (scene.id === "body") {
+      const s = Math.min(w, h);
+      const cx = w * 0.5;
+      const y0 = h * 0.36;
+      const grow = easeOut(Math.min(1, u / 0.45));
+      ctx.translate(cx, y0 + s * 0.2);
+      ctx.scale(grow, grow);
+      ctx.translate(-cx, -(y0 + s * 0.2));
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(246, 241, 232, 0.28)";
+      ctx.lineWidth = 1.2;
+      ctx.ellipse(cx, y0, s * 0.05, s * 0.062, 0, 0, Math.PI * 2);
+      ctx.moveTo(cx, y0 + s * 0.062);
+      ctx.lineTo(cx, y0 + s * 0.26);
+      ctx.moveTo(cx, y0 + s * 0.1);
+      ctx.lineTo(cx - s * 0.11, y0 + s * 0.2);
+      ctx.moveTo(cx, y0 + s * 0.1);
+      ctx.lineTo(cx + s * 0.11, y0 + s * 0.2);
+      ctx.moveTo(cx, y0 + s * 0.26);
+      ctx.lineTo(cx - s * 0.05, y0 + s * 0.42);
+      ctx.moveTo(cx, y0 + s * 0.26);
+      ctx.lineTo(cx + s * 0.05, y0 + s * 0.42);
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
+
+  StardustIntro.prototype.drawStreaks = function drawStreaks() {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = "rgba(246, 241, 232, 0.28)";
+    ctx.lineWidth = 1;
+    this.particles.forEach((p, index) => {
+      if (index % 18 !== 0) return;
+      const len = 6 + p.r * 4;
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx * len, p.y - p.vy * len);
+      ctx.stroke();
+    });
+    ctx.restore();
   };
 
   StardustIntro.prototype.renderCopy = function renderCopy(immediate) {
@@ -390,11 +487,15 @@
       this.renderLabels(scene.id);
       const next = document.getElementById("intro-next");
       if (next) next.textContent = this.scene === SCENES.length - 1 ? "进入周期表" : "继续";
+      this.copy.classList.remove("is-in");
+      void this.copy.offsetWidth;
+      this.copy.classList.add("is-in");
     };
     if (immediate) {
       apply();
       return;
     }
+    this.copy.classList.remove("is-in");
     this.copy.classList.add("is-out");
     window.setTimeout(() => {
       apply();

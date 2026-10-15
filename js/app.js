@@ -136,7 +136,7 @@
     ELEMENTS.forEach((el) => {
       const row = el.row <= 7 ? el.row + 1 : el.row === 9 ? 10 : 11;
       bits.push(
-        `<button type="button" class="cell cat-${el.category}" data-z="${el.z}" style="grid-row:${row};grid-column:${el.col + 1}" aria-label="${esc(el.nameZh)}，${el.symbol}，原子序数 ${el.z}" aria-pressed="false">` +
+        `<button type="button" class="cell cat-${el.category}" data-z="${el.z}" style="grid-row:${row};grid-column:${el.col + 1};--d:${el.col * 34 + el.row * 14}" aria-label="${esc(el.nameZh)}，${el.symbol}，原子序数 ${el.z}" aria-pressed="false">` +
           `<span class="z">${el.z}</span><span class="sym">${esc(el.symbol)}</span><span class="zh">${esc(el.nameZh)}</span>` +
           `</button>`
       );
@@ -167,6 +167,7 @@
       storyHost.innerHTML =
         '<p class="kicker">自由探索</p><h2>118 格，点开就能核对</h2>' +
         "<p class=\"body\">搜索符号、中文名或英文名。焰色和谱线只在有文献时出现；没有标准原子量，就写无，不拿质量数冒充。</p>";
+      playEnter(storyHost);
       return;
     }
     const ch = chapter();
@@ -189,6 +190,13 @@
       `<button type="button" class="btn" id="prev-ch" ${state.chapter === 0 ? "disabled" : ""}>上一章</button>` +
       `<button type="button" class="btn primary" id="next-ch">${state.chapter === STORY.chapters.length - 1 ? "改为自由探索" : "下一章"}</button>` +
       `<div class="dots">${dots}</div></div>`;
+    playEnter(storyHost);
+  }
+
+  function playEnter(node) {
+    node.classList.remove("is-entering");
+    void node.offsetWidth;
+    node.classList.add("is-entering");
   }
 
   function renderCells() {
@@ -217,22 +225,25 @@
     const orbits = shells
       .map((count, index) => {
         const radius = 16 + ((index + 1) * (70 - 16)) / shells.length;
-        const dots = [];
+        const duration = (16 + index * 7).toFixed(1);
+        const rad = count > 24 ? 1.6 : count > 12 ? 2 : 2.4;
+        const electrons = [];
         for (let i = 0; i < count; i += 1) {
-          const ang = -Math.PI / 2 + (i / count) * Math.PI * 2;
-          const x = cx + radius * Math.cos(ang);
-          const y = cy + radius * Math.sin(ang);
-          const rad = count > 24 ? 1.7 : count > 12 ? 2.1 : 2.6;
-          dots.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad}" fill="#f3e2c2"/>`);
+          const ang = ((i / count) * 360).toFixed(1);
+          electrons.push(
+            `<g class="electron-spin" style="--spin:${ang}deg;transform:rotate(${ang}deg);animation-duration:${duration}s">` +
+              `<circle class="electron" cx="${cx}" cy="${(cy - radius).toFixed(1)}" r="${rad}"/>` +
+            `</g>`
+          );
         }
-        return `<circle cx="${cx}" cy="${cy}" r="${radius.toFixed(1)}" fill="none" stroke="rgba(228,194,122,0.35)" stroke-width="1"/>${dots.join("")}`;
+        return `<circle class="orbit" cx="${cx}" cy="${cy}" r="${radius.toFixed(1)}"/>${electrons.join("")}`;
       })
       .join("");
     return (
       `<svg class="shell-svg" viewBox="0 0 180 180" aria-hidden="true">` +
       orbits +
-      `<circle cx="${cx}" cy="${cy}" r="11" fill="#e4c27a"/>` +
-      `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" fill="#23190c" font-family="sans-serif">${el.z}</text>` +
+      `<circle class="nucleus" cx="${cx}" cy="${cy}" r="11"/>` +
+      `<text x="${cx}" y="${cy + 4}" text-anchor="middle">${el.z}</text>` +
       `</svg>`
     );
   }
@@ -252,11 +263,11 @@
     const lines = el.lines || [];
     const spectrum = lines.length
       ? `<div class="spectrum" role="img" aria-label="可见发射线示意">${lines
-          .map((line) => {
+          .map((line, index) => {
             const left = ((line.nm - 380) / 400) * 100;
             const color = wavelengthToRgb(line.nm);
             const h = 30 + Math.round((line.intensity / (lines[0] ? Math.max(...lines.map((item) => item.intensity)) : 1)) * 46);
-            return `<i style="left:${left}%;height:${h}%;background:${color};box-shadow:0 0 8px ${color}"></i>`;
+            return `<i style="left:${left}%;height:${h}%;background:${color};box-shadow:0 0 8px ${color};animation-delay:${index * 55}ms"></i>`;
           })
           .join("")}<div class="axis"><span>380</span><span>580</span><span>780 nm</span></div></div>
           <ul class="lines">${lines
@@ -298,6 +309,7 @@
       (el.body ? `<h3 class="section-title">在人体里</h3><p>${esc(el.body)}</p>` : "") +
       `<div class="panel-nav"><button type="button" class="btn" id="prev-el">上一个</button><button type="button" class="btn" id="next-el">下一个</button></div>`;
     syncSheet();
+    playEnter(panel);
   }
 
   function syncSheet() {
@@ -515,18 +527,28 @@
     });
   }
 
+  function revealTable() {
+    if (document.body.classList.contains("revealed")) return;
+    document.body.classList.remove("instant");
+    document.body.classList.add("revealed");
+  }
+
   function startIntro() {
     window.scrollTo(0, 0);
+    document.body.classList.remove("revealed", "instant");
     try {
       window.StardustIntro.start({
         getTargets,
+        onReveal: revealTable,
         onDone() {
+          revealTable();
           const node = table.querySelector(`.cell[data-z="${state.z}"]`);
           if (node) node.focus({ preventScroll: true });
         },
       });
     } catch (error) {
       document.getElementById("intro").hidden = true;
+      revealTable();
       console.error(error);
     }
   }
@@ -539,7 +561,6 @@
     buildTable();
     buildLegend();
     bind();
-    renderModes();
     const fromHash = readHash();
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (fromHash) {
@@ -549,6 +570,7 @@
     } else {
       state.z = chapter().elements[0] || 1;
     }
+    renderModes();
     renderStory();
     renderCells();
     renderPanel();
@@ -560,6 +582,7 @@
     document.getElementById("intro-skip").addEventListener("click", () => window.StardustIntro.skip());
     if (fromHash || reduce) {
       document.getElementById("intro").hidden = true;
+      document.body.classList.add("revealed", "instant");
     } else {
       startIntro();
     }
