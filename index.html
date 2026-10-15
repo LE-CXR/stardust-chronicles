@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>星尘编年史</title>
+  <meta name="description" content="一张可以核对的元素周期表。从星尘讲到人体，再落到 118 种元素的电子层、谱线、焰色和用途。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#table-scroll">跳到周期表</a>
+  <header class="topbar">
+    <div class="brand">
+      <h1>星尘编年史</h1>
+      <p>一张可以核对的元素周期表</p>
+    </div>
+    <div class="toolbar">
+      <div class="modes" role="group" aria-label="阅读方式">
+        <button type="button" id="mode-story" aria-pressed="true">看故事</button>
+        <button type="button" id="mode-explore" aria-pressed="false">自由探索</button>
+      </div>
+      <button type="button" class="btn" id="density" hidden>细读</button>
+      <input id="search" class="search" type="search" placeholder="搜索氢、Fe 或铁" aria-label="搜索元素" autocomplete="off">
+      <button type="button" class="icon-btn" id="replay">重看开场</button>
+      <button type="button" class="icon-btn" id="audio-open">声音</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="stage">
+      <div class="table-scroll" id="table-scroll">
+        <div class="ptable" id="table" aria-label="元素周期表"></div>
+      </div>
+      <p class="scroll-hint" id="scroll-hint" hidden>左右滑动，查看整张表。</p>
+      <div class="legend" id="legend" aria-label="按类别筛选"></div>
+      <p class="layout-note">主表第 6、7 周期在镧、锕之后直接接铪和鑪。铈到镥、钍到铹列在表下，对齐第 4 到 17 族。这是教材里常见的排法。第 3 族放镧还是镥，学术界仍有讨论。</p>
+    </section>
+    <aside class="panel" id="panel" aria-label="元素档案"></aside>
+  </div>
+
+  <section class="story" id="story" aria-live="polite"></section>
+
+  <footer class="foot">
+    <p>原子量来自 CIAAW。可见谱线节选自 NIST 强线表。没有核对的字段会留空。</p>
+    <button type="button" id="about-open">数据从哪来</button>
+  </footer>
+
+  <div class="sheet-backdrop" id="backdrop" hidden></div>
+
+  <div class="intro" id="intro" hidden>
+    <canvas id="intro-canvas" aria-hidden="true"></canvas>
+    <div class="intro-labels" id="intro-labels"></div>
+    <div class="intro-copy" id="intro-copy">
+      <p class="kicker" id="intro-kicker"></p>
+      <h2 id="intro-title"></h2>
+      <p class="sub" id="intro-sub"></p>
+    </div>
+    <div class="intro-dots" id="intro-dots" aria-hidden="true"></div>
+    <div class="intro-actions">
+      <button type="button" class="btn primary" id="intro-next">继续</button>
+      <button type="button" class="btn" id="intro-skip">跳过开场</button>
+    </div>
+  </div>
+
+  <dialog id="about"></dialog>
+  <dialog id="audio-note"></dialog>
+
+  <noscript>
+    <p>需要启用 JavaScript。这是一个不依赖服务器的静态页面。</p>
+  </noscript>
+  <script src="data/elements.js"></script>
+  <script src="data/story.js"></script>
+  <script src="js/intro.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
