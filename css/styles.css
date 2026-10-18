@@ -1050,3 +1050,9 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
   outline-offset: 2px;
   z-index: 2;
 }
+.cell.is-dim {
+  opacity: .4;
+  filter: saturate(.65);
+  transition: opacity .3s ease, filter .3s ease;
+}
+.cell.is-dim:hover { opacity: .75; filter: none; }
