@@ -243,7 +243,29 @@ function finish() {
   setTimeout(() => {
     fEl.hidden = true;
     if (onDone) onDone();
+    showListenHint();
   }, 900);
+}
+
+/* 影片结束那一刻才提示：这个站最特别的东西是听得见的，但得让人知道 */
+function showListenHint() {
+  try { if (sessionStorage.getItem("stardust-hint") === "1") return; } catch (e) {}
+  const tip = document.createElement("div");
+  tip.className = "listen-hint";
+  tip.innerHTML = "<i></i>悬浮任意元素，能听见它的光谱";
+  document.body.appendChild(tip);
+  requestAnimationFrame(() => tip.classList.add("is-on"));
+  let gone = false;
+  const hide = () => {
+    if (gone) return;
+    gone = true;
+    tip.classList.remove("is-on");
+    setTimeout(() => tip.remove(), 500);
+    try { sessionStorage.setItem("stardust-hint", "1"); } catch (e) {}
+  };
+  setTimeout(hide, 9000);
+  const table = byId("table");
+  if (table) table.addEventListener("pointerover", hide, { once: true, passive: true });
 }
 
 function startFilm(opts) {
