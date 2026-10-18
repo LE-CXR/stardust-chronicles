@@ -313,8 +313,14 @@ function openFocus() {
   const iso = ISO && ISO[String(el.z)];
   focusLayer.querySelector(".af-name").textContent = el.nameZh + " · " + (el.nameEn || "") +
     (iso ? " · " + el.symbol + "-" + iso.A + " · 丰度 " + (iso.abundance * 100).toFixed(2) + "%" : " · 无天然丰度数据");
-  focusLayer.querySelector(".af-shells").textContent =
-    (el.shells || []).map(function (c, i) { return String.fromCharCode(75 + i) + " " + c; }).join("   ");
+  const shellTxt = (el.shells || []).map(function (c, i) {
+    return String.fromCharCode(75 + i) + " " + c;
+  }).join("   ");
+  const isoNow = ISO && ISO[String(el.z)];
+  focusLayer.querySelector(".af-shells").innerHTML = shellTxt +
+    (isoNow
+      ? ' <span class="af-key"><i class="p"></i>质子 ' + el.z + '<i class="n"></i>中子 ' + (isoNow.A - el.z) + "</span>"
+      : ' <span class="af-key">核子示意 · 无天然丰度数据</span>');
   focusLayer.querySelector(".af-stage").appendChild(canvas);
   focusLayer.classList.add("is-on");
   userX = 0;

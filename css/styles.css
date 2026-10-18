@@ -1012,6 +1012,13 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
   padding-top: 10px; border-top: 1px solid rgba(228, 194, 122, .12);
 }
 .af-shells { font: 500 13px/1.6 "Consolas", ui-monospace, monospace; letter-spacing: .18em; color: rgba(228, 194, 122, .85); }
+.af-key { margin-left: 20px; letter-spacing: .08em; color: rgba(242, 234, 217, .62); }
+.af-key i {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin: 0 5px 0 12px; vertical-align: 1px;
+}
+.af-key i.p { background: #d8a55a; }
+.af-key i.n { background: #9fb0c0; }
 .af-close {
   border: 1px solid rgba(228, 194, 122, .35); background: transparent;
   color: #e4c27a; border-radius: 999px; padding: 7px 20px;
