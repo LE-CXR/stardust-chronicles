@@ -202,10 +202,10 @@ function tick() {
     r.ring.rotation.z = r.bz;
     r.spin.rotation.z += r.speed * 0.012;
     const lit = highlight === -1 || highlight === i;
-    r.lineMat.opacity += ((lit ? 0.46 : 0.2) - r.lineMat.opacity) * 0.2;
-    r.eMat.opacity += ((lit ? 0.95 : 0.4) - r.eMat.opacity) * 0.2;
+    r.lineMat.opacity += ((lit ? 0.92 : 0.16) - r.lineMat.opacity) * 0.2;
+    r.eMat.opacity += ((lit ? 0.95 : 0.3) - r.eMat.opacity) * 0.2;
     r.cMat.opacity += ((lit ? 0.15 : 0.06) - r.cMat.opacity) * 0.2;
-    r.eMat.size = highlight === i ? 3.2 : 2.6;
+    r.eMat.size = highlight === i ? 3.4 : 2.6;
   }
   renderer.render(scene, camera);
 }
