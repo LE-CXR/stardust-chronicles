@@ -1,0 +1,89 @@
+/* 桌面端的"掠过"手感：悬停任意一格，浮出一张轻卡——符号、中英文名、它自己的光谱。
+   声音由 film.js 的悬浮监听负责，这里只管视觉，避免重复发声。 */
+(function () {
+  "use strict";
+  if (matchMedia("(pointer: coarse)").matches) return;
+
+  var els = window.STARDUST_ELEMENTS || [];
+  var byZ = {};
+  els.forEach(function (e) { byZ[e.z] = e; });
+  var card = null, cur = null, showTimer = 0, hideTimer = 0;
+
+  function ensure() {
+    if (card) return card;
+    card = document.createElement("div");
+    card.className = "hovercard";
+    card.setAttribute("aria-hidden", "true");
+    document.body.appendChild(card);
+    return card;
+  }
+
+  function spectrum(el) {
+    var lines = (el.lines || []).slice()
+      .sort(function (a, b) { return (b.intensity || 1) - (a.intensity || 1); }).slice(0, 6);
+    if (!lines.length) return '<div class="hc-spec is-empty">无可见强线</div>';
+    return '<div class="hc-spec">' + lines.map(function (l) {
+      var x = ((l.nm - 380) / 400) * 100;
+      return '<i style="left:' + x.toFixed(2) + '%"></i>';
+    }).join("") + "</div>";
+  }
+
+  function render(el) {
+    var c = ensure();
+    c.innerHTML =
+      '<div class="hc-head">' +
+        '<b class="hc-sym">' + el.symbol + "</b>" +
+        '<span class="hc-names"><em>' + el.nameZh + "</em><small>" + (el.nameEn || "") + "</small></span>" +
+        '<span class="hc-sound">\u266a</span>' +
+      "</div>" +
+      '<div class="hc-meta">' + el.z + " · " + (el.categoryZh || "") +
+        (el.period ? " · 第 " + el.period + " 周期" : "") + "</div>" +
+      spectrum(el) +
+      '<div class="hc-foot">380 nm &mdash; 780 nm</div>';
+    return c;
+  }
+
+  function place(cell) {
+    var r = cell.getBoundingClientRect();
+    var w = card.offsetWidth, h = card.offsetHeight;
+    var x = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 12));
+    var y = r.top - h - 12;
+    if (y < 12) y = r.bottom + 12;
+    card.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+  }
+
+  function hide() {
+    cur = null;
+    clearTimeout(showTimer);
+    if (card) card.classList.remove("is-on");
+  }
+
+  document.addEventListener("pointerover", function (e) {
+    var cell = e.target.closest ? e.target.closest(".cell[data-z]") : null;
+    if (!cell || cell === cur) return;
+    cur = cell;
+    clearTimeout(hideTimer);
+    clearTimeout(showTimer);
+    showTimer = setTimeout(function () {
+      if (!cur) return;
+      var el = byZ[+cur.dataset.z];
+      if (!el) return;
+      render(el);
+      place(cur);
+      requestAnimationFrame(function () { card.classList.add("is-on"); });
+    }, 90);
+  }, { passive: true });
+
+  document.addEventListener("pointerout", function (e) {
+    var cell = e.target.closest ? e.target.closest(".cell[data-z]") : null;
+    if (!cell || cell !== cur) return;
+    cur = null;
+    clearTimeout(showTimer);
+    hideTimer = setTimeout(function () {
+      if (!cur) hide();
+    }, 130);
+  }, { passive: true });
+
+  addEventListener("scroll", hide, { passive: true, capture: true });
+  addEventListener("resize", hide, { passive: true });
+})();
