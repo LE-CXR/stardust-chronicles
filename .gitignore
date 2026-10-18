@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 agent-tools/
 .DS_Store
+assets/film/*.mp4
