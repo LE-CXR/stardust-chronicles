@@ -11,6 +11,7 @@ fetch("data/isotopes.json").then(function (r) { return r.json(); }).then(functio
 }).catch(function () {});
 const BRASS = 0xd8a55a, ELECTRON = 0x7fa4c0, RING = 0x9a7b4f;
 
+let capEl = null;
 const canvas = document.createElement("canvas");
 canvas.className = "atom3d";
 canvas.setAttribute("aria-hidden", "true");
@@ -22,6 +23,19 @@ const badge = document.createElement("span");
 badge.className = "atom-badge";
 badge.textContent = "点击展开";
 holder.appendChild(badge);
+capEl = document.createElement("p");
+capEl.className = "atom-iso";
+holder.appendChild(capEl);
+
+function isoText(el) {
+  const rec = ISO && ISO[String(el.z)];
+  if (!rec || !rec.mixes || !rec.mixes.length) return "无天然同位素 · 合成元素";
+  const parts = rec.mixes.slice(0, 3).map(function (m) {
+    const pct = (m.abundance * 100).toFixed(m.abundance >= 0.9999 ? 0 : 2);
+    return el.symbol + "-" + m.A + " " + pct + "%";
+  });
+  return "天然同位素：" + parts.join(" · ");
+}
 
 const focusLayer = document.createElement("div");
 focusLayer.className = "atom-focus";
@@ -141,6 +155,7 @@ function build(z) {
   inst.instanceMatrix.needsUpdate = true;
   if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
   nuc.add(inst);
+  if (capEl) capEl.textContent = isoText(el);
   lastCounts = iso
     ? { z: el.z, protons: protons, neutrons: total - protons, total: total, isotope: iso.A, estimated: false }
     : { z: el.z, protons: null, neutrons: null, total: total, isotope: null, estimated: true };

@@ -40,7 +40,7 @@ python3 -m http.server 8741
 - **可见谱线**：NIST *Handbook of Basic Atomic Spectroscopic Data* 的 Strong Lines 表，空气波长。每种元素最多 8 条，兼顾强度和在可见区里的分布。这不是完整光谱。砹、钫以及镄以后，该手册没有可用的可见强线，面板留空。
 - **焰色**：只收录定性分析和经典光谱学里反复出现的颜色。色块是示意，不是测色值。钙、锶、钡、铜的肉眼颜色很大程度来自分子带，和原子强线不是同一件事。
 - **用途**：本项目用中文写的共识性工业、医学和教材用途。没有稳定用途就写没有日用。
-- **原子核**：核子按 NIST《Atomic Weights and Isotopic Compositions》里天然丰度最高的同位素配比着色（`data/isotopes.json`，84 个元素有数据），质子数 = 原子序数；没有天然丰度的元素显示「无天然丰度数据」，不估算。
+- **原子核**：核子按 NIST《Atomic Weights and Isotopic Compositions》里天然丰度最高的同位素配比着色，并在原子下方列出前三种天然同位素组成（`data/isotopes.json`，84 个元素有数据），质子数 = 原子序数；没有天然丰度的元素显示「无天然丰度数据」，不估算。
 - **人体百分比**：只出现在故事第五章，是解剖学教材常见的按质量数量级，不是体检值。
 
 组态原文在 `data/configs.json`，谱线节选在 `data/spectra.json`。页面实际读取的是生成后的 `data/elements.js`（这样用 `file://` 打开也不受 fetch 限制）。`data/elements.json` 是同一份数据，方便检查。

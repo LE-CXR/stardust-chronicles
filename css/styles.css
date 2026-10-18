@@ -983,6 +983,10 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 }
 .atom-holder:hover .atom-badge { opacity: 1; }
 .atom3d { cursor: zoom-in; }
+.atom-iso {
+  margin: 0 2px 6px; font-size: 10.5px; line-height: 1.7;
+  letter-spacing: .04em; color: rgba(80, 64, 44, .58);
+}
 
 /* 专注模式：把原子搬进一间暗房 */
 .atom-focus {
