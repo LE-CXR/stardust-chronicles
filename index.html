@@ -7,8 +7,29 @@
   <meta name="description" content="一张可以核对的元素周期表。从星尘讲到人体，再落到 118 种元素的电子层、谱线、焰色和用途。">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/film.css">
 </head>
 <body>
+  <section class="film" id="film" hidden aria-label="星尘编年史 影片">
+    <canvas id="film-canvas" aria-hidden="true"></canvas>
+    <div class="film-hud">
+      <div class="film-brand">星尘编年史<span>STARDUST CHRONICLES</span></div>
+      <div class="film-tc" id="film-tc">00:00:00:00</div>
+    </div>
+    <div class="film-act" id="film-act"></div>
+    <p class="film-sub" id="film-sub"></p>
+    <div class="film-bar"><i id="film-bar"></i></div>
+    <button class="film-skip" id="film-skip" type="button">跳过</button>
+    <div class="film-flash" id="film-flash"></div>
+    <div class="film-gate" id="film-gate">
+      <p class="kicker">STARDUST CHRONICLES</p>
+      <h2>星尘编年史</h2>
+      <p class="lede">一张可以核对的元素周期表<br>1 分 52 秒 · 建议戴耳机</p>
+      <button class="btn primary" id="film-play" type="button">开始放映</button>
+      <button class="film-direct" id="film-direct" type="button">直接看周期表</button>
+    </div>
+    <audio id="film-audio" src="assets/film/score.mp3" preload="auto" aria-hidden="true"></audio>
+  </section>
   <a class="skip" href="#table-scroll">跳到周期表</a>
   <header class="topbar">
     <div class="brand">
@@ -72,7 +93,7 @@
   </noscript>
   <script src="data/elements.js"></script>
   <script src="data/story.js"></script>
-  <script src="js/intro.js"></script>
+  <script src="js/film-boot.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

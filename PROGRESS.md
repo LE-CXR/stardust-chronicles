@@ -8,3 +8,15 @@
 - 阅读页是暖纸色和陶土色，衬线标题。开场粒子、扩散环、恒星弧线、人体轮廓、格子入场、电子公转、谱线长出和焰色都由页面里的脚本和样式绘制，没有外部动画文件。
 - 旁白与 BGM 未做，只有占位说明。
 - 改数据：编辑 `tools/build_elements.py` 或 `data/spectra.json`，再跑 `python3 tools/build_elements.py`。
+
+## v2 影片层（Codex，2026-10-18）
+
+- 新增开场影片：`js/film.js` + `css/film.css` + `js/film-boot.js`，three.js 本地化在 `lib/`（离线可用，无 npm）。
+- 118 格的三维自组装按**核合成顺序**落位：氢、氦最先，碳氧在熔炉幕，铁峰之后停住，
+  超新星那一下把 27–118 号元素砸进来。时间轴来自 `data/acts.json`（7 幕 24 句，实测配音时长）。
+- 声音接上了：`assets/film/score.mp3`（旁白+配乐母版），`js/stardust-audio.js` 做元素和弦；
+  顶栏「声音」弹窗改成真的说明 + 试听钠。
+- 竖屏单独做镜头：拉远 1.58 倍，最后两幕沿表格横移，底部加深色渐变保证字幕压得住。
+- 验证：零 console 错误；桌面/手机都能放映到结束并交还表格；`file://` 下自动跳过影片（浏览器禁止 ES 模块）。
+- 坑：本地 `python -m http.server` 不支持 Range，音频 seek 会被拒绝——调试画面用 `window.__filmSeek(ms)`，
+  它同时是出片用的外部时钟。

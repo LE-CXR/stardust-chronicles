@@ -394,9 +394,17 @@
   function openAudio() {
     const dialog = document.getElementById("audio-note");
     dialog.innerHTML =
-      `<h3>声音还空着</h3><p>旁白和背景音乐留到后面再录。这一版先把星尘怎么落进格子、格子里的数据是否站得住，做清楚。</p>` +
-      `<div class="actions"><button type="button" class="btn primary" id="close-audio">好</button></div>`;
+      `<h3>元素的声音</h3>` +
+      `<p>影片自带旁白与配乐。表格里的每一种元素也有自己的音色：把可见光谱等比搬进听域，` +
+      `谱线之间的音程关系保持真实。悬浮或点按任意格子就能听到。</p>` +
+      `<p class="note">钠的 D 双线只相差 0.15%，搬到耳朵里是 0.147 Hz 的拍音，人耳听不出来——` +
+      `所以钠是一个纯音。这不是做不出来，是不该编。</p>` +
+      `<div class="actions"><button type="button" class="btn" id="audition">试听钠</button>` +
+      `<button type="button" class="btn primary" id="close-audio">好</button></div>`;
     dialog.showModal();
+    dialog.querySelector("#audition").addEventListener("click", () => {
+      if (window.__playElement) window.__playElement(11);
+    });
     dialog.querySelector("#close-audio").addEventListener("click", () => dialog.close());
   }
 
