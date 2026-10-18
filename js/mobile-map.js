@@ -44,6 +44,21 @@
     var left = idx * step() - 10;
     if (SCROLL.scrollTo) SCROLL.scrollTo({ left: left, behavior: "smooth" });
     else SCROLL.scrollLeft = left;
+    /* 表格网格第 1 列是周期号，所以第 N 族落在 grid-column N+1 */
+    var cell = firstInColumn(idx + 2);
+    if (cell) cell.click();
+  }
+
+  function firstInColumn(col) {
+    var best = null, bestRow = Infinity;
+    var cells = TABLE.querySelectorAll(".cell[data-z]");
+    for (var i = 0; i < cells.length; i++) {
+      var c = cells[i];
+      var gc = parseInt(c.style.gridColumn, 10);
+      var gr = parseInt(c.style.gridRow, 10);
+      if (gc === col && gr < bestRow) { bestRow = gr; best = c; }
+    }
+    return best;
   }
 
   function sync() {
