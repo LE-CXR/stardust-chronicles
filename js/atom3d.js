@@ -19,7 +19,7 @@ camera.position.set(0, 0, 40);
 const atom = new THREE.Group();
 scene.add(atom);
 const rings = [];
-let nucleus = null, nucT0 = 0;
+let nucleus = null, nucT0 = 0, highlight = -1;
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
@@ -55,6 +55,22 @@ function clearAtom() {
     });
   }
   rings.length = 0;
+}
+
+
+function labelSprite(text) {
+  const c = document.createElement("canvas");
+  c.width = 128; c.height = 64;
+  const g = c.getContext("2d");
+  g.fillStyle = "rgba(251,246,234,.86)";
+  g.beginPath(); g.roundRect(4, 10, 120, 44, 11); g.fill();
+  g.strokeStyle = "rgba(150,120,80,.38)"; g.lineWidth = 2; g.stroke();
+  g.fillStyle = "#5c462a"; g.font = "600 25px 'Microsoft YaHei'";
+  g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(text, 64, 33);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, opacity: 0 }));
 }
 
 function build(z) {
@@ -98,8 +114,8 @@ function build(z) {
     ring.scale.setScalar(0.001);
     atom.add(ring);
 
-    const line = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
-      color: RING, transparent: true, opacity: 0.46 }));
+    const lineMat = new THREE.MeshBasicMaterial({ color: RING, transparent: true, opacity: 0.46 });
+    const line = new THREE.Mesh(ringGeo, lineMat);
     line.scale.set(radius, radius, 1);
     ring.add(line);
 
@@ -117,9 +133,10 @@ function build(z) {
     }
     const eGeo = new THREE.BufferGeometry();
     eGeo.setAttribute("position", new THREE.BufferAttribute(epos, 3));
-    spin.add(new THREE.Points(eGeo, new THREE.PointsMaterial({
+    const eMat = new THREE.PointsMaterial({
       color: 0x3f6f96, size: 2.6, map: dotTex, transparent: true, opacity: 0.95,
-      depthWrite: false, sizeAttenuation: true })));
+      depthWrite: false, sizeAttenuation: true });
+    spin.add(new THREE.Points(eGeo, eMat));
 
     // 电子云：轨道附近的概率薄雾（示意，不额外声明数值）
     const cn = Math.min(180, 48 + count * 5);
@@ -136,11 +153,12 @@ function build(z) {
     }
     const cGeo = new THREE.BufferGeometry();
     cGeo.setAttribute("position", new THREE.BufferAttribute(cpos, 3));
-    spin.add(new THREE.Points(cGeo, new THREE.PointsMaterial({
+    const cMat = new THREE.PointsMaterial({
       color: 0x7fa4c0, size: 1.6, map: dotTex, transparent: true, opacity: 0.15,
-      depthWrite: false, sizeAttenuation: true })));
+      depthWrite: false, sizeAttenuation: true });
+    spin.add(new THREE.Points(cGeo, cMat));
 
-    rings.push({ ring, spin, speed: 0.5 / Math.sqrt(radius) * (i % 2 ? -1 : 1),
+    rings.push({ ring, spin, lineMat, eMat, cMat, speed: 0.5 / Math.sqrt(radius) * (i % 2 ? -1 : 1),
       t0: performance.now() + i * 70, bx, by, bz });
   });
 
@@ -183,6 +201,11 @@ function tick() {
     r.ring.rotation.x = r.bx + (1 - e) * 0.35;
     r.ring.rotation.z = r.bz;
     r.spin.rotation.z += r.speed * 0.012;
+    const lit = highlight === -1 || highlight === i;
+    r.lineMat.opacity += ((lit ? 0.46 : 0.2) - r.lineMat.opacity) * 0.2;
+    r.eMat.opacity += ((lit ? 0.95 : 0.4) - r.eMat.opacity) * 0.2;
+    r.cMat.opacity += ((lit ? 0.15 : 0.06) - r.cMat.opacity) * 0.2;
+    r.eMat.size = highlight === i ? 3.2 : 2.6;
   }
   renderer.render(scene, camera);
 }
@@ -204,6 +227,14 @@ function mount() {
   sizeToBox();
   const cell = document.querySelector('.cell[aria-pressed="true"]');
   if (cell && Number(cell.dataset.z) !== built) build(cell.dataset.z);
+  /* 面板里的电子层列表与三维轨道联动：指到 K 层，K 环亮、其余退后 */
+  document.querySelectorAll("#panel .shell-list li").forEach(function (li, i) {
+    if (li.dataset.wired) return;
+    li.dataset.wired = "1";
+    li.style.cursor = "pointer";
+    li.addEventListener("pointerenter", function () { highlight = i; });
+    li.addEventListener("pointerleave", function () { highlight = -1; });
+  });
 }
 
 canvas.addEventListener("pointermove", (e) => {
