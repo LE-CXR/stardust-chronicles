@@ -72,6 +72,8 @@ const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
 let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0;
 let focusT0 = 0, focusHalo = null, lastCounts = null, renderOn = true, renders = 0;
+let nucInst = null, nucBase = null, nucPhase = null, nucScale = 0.3, jitterFrame = 0;
+const jDummy = new THREE.Object3D();
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
@@ -155,12 +157,14 @@ function build(z) {
   const inst = new THREE.InstancedMesh(sphereGeo,
     new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.92 }), total);
   const dummy = new THREE.Object3D();
+  const dummyPositions = new Float32Array(total * 3);
   const cProton = new THREE.Color(BRASS), cNeutron = new THREE.Color(0x9fb0c0),
     cSchematic = new THREE.Color(0xc2ab84);
   for (let i = 0; i < total; i++) {
     const u = rnd(), th = rnd() * 6.283, ph = Math.acos(2 * rnd() - 1);
     const r = nucR * Math.cbrt(u) * 0.82;
     dummy.position.set(r * Math.sin(ph) * Math.cos(th), r * Math.sin(ph) * Math.sin(th), r * Math.cos(ph));
+    dummyPositions[i*3] = dummy.position.x; dummyPositions[i*3+1] = dummy.position.y; dummyPositions[i*3+2] = dummy.position.z;
     dummy.scale.setScalar(total <= 4 ? 0.42 : 0.34);
     dummy.updateMatrix();
     inst.setMatrixAt(i, dummy.matrix);
@@ -169,6 +173,16 @@ function build(z) {
   inst.instanceMatrix.needsUpdate = true;
   if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
   nuc.add(inst);
+  nucInst = inst;
+  nucBase = new Float32Array(inst.count * 3);
+  nucPhase = new Float32Array(inst.count);
+  nucScale = total <= 4 ? 0.42 : 0.34;
+  for (let i = 0; i < inst.count; i++) {
+    nucBase[i*3] = dummyPositions[i*3];
+    nucBase[i*3+1] = dummyPositions[i*3+1];
+    nucBase[i*3+2] = dummyPositions[i*3+2];
+    nucPhase[i] = i * 0.7;
+  }
   if (capEl) capEl.textContent = isoText(el);
   renderMix(el);
   lastCounts = iso
@@ -293,7 +307,21 @@ function tick() {
     r.lineMat.opacity += ((lit ? 0.92 : 0.16) - r.lineMat.opacity) * 0.2;
     r.eMat.opacity += ((lit ? 0.95 : 0.3) - r.eMat.opacity) * 0.2;
     r.cMat.opacity += ((lit ? 0.15 : 0.06) - r.cMat.opacity) * 0.2;
-    r.eMat.size = highlight === i ? 3.4 : 2.6;
+    r.eMat.size = highlight === i ? 3.4 + 0.45 * Math.sin(now * 0.005) : 2.6;
+  }
+  if (nucInst && nucBase && ++jitterFrame % 2 === 0) {
+    const tt = now * 0.0011;
+    for (let i = 0; i < nucInst.count; i++) {
+      const b = i * 3;
+      jDummy.position.set(
+        nucBase[b] + Math.sin(tt + nucPhase[i]) * 0.05,
+        nucBase[b + 1] + Math.cos(tt * 1.1 + nucPhase[i]) * 0.05,
+        nucBase[b + 2] + Math.sin(tt * 0.9 + nucPhase[i] * 1.3) * 0.05);
+      jDummy.scale.setScalar(nucScale);
+      jDummy.updateMatrix();
+      nucInst.setMatrixAt(i, jDummy.matrix);
+    }
+    nucInst.instanceMatrix.needsUpdate = true;
   }
   renders++;
   renderer.render(scene, camera);
@@ -400,6 +428,9 @@ window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
     nuc: nucleus ? nucleus.scale.x : -1, conn: canvas.isConnected,
     hidden: document.hidden, z: built, frames: frames, renders: renders, counts: lastCounts };
+};
+window.__atomJitter = function () {
+  return nucInst ? { x: +nucInst.instanceMatrix.array[12].toFixed(4), n: nucInst.count } : null;
 };
 window.__atomRender = function () { renderer.render(scene, camera); return true; };
 window.__atomPixels = function () {
