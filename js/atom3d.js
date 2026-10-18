@@ -24,6 +24,15 @@ let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, la
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
 const ringGeo = new THREE.TorusGeometry(1, 0.012, 6, 96);
 const coreGeo = new THREE.IcosahedronGeometry(1, 2);
+const dotCanvas = document.createElement("canvas");
+dotCanvas.width = dotCanvas.height = 64;
+const d2 = dotCanvas.getContext("2d");
+const dg = d2.createRadialGradient(32, 32, 0, 32, 32, 32);
+dg.addColorStop(0, "rgba(255,255,255,1)");
+dg.addColorStop(0.45, "rgba(210,230,245,.55)");
+dg.addColorStop(1, "rgba(210,230,245,0)");
+d2.fillStyle = dg; d2.fillRect(0, 0, 64, 64);
+const dotTex = new THREE.CanvasTexture(dotCanvas);
 const glowCanvas = document.createElement("canvas");
 glowCanvas.width = glowCanvas.height = 128;
 const g2 = glowCanvas.getContext("2d");
@@ -41,7 +50,6 @@ function clearAtom() {
     atom.remove(c);
     c.traverse && c.traverse((n) => {
       if (n.geometry && n.geometry !== sphereGeo && n.geometry !== ringGeo && n.geometry !== coreGeo) n.geometry.dispose();
-      if (n.material && n.material.map) n.material.map.dispose();
       if (n.material) n.material.dispose();
     });
   }
@@ -90,16 +98,42 @@ function build(z) {
 
     const spin = new THREE.Group();
     ring.add(spin);
+
+    // 电子：按该层真实电子数排布，用光点渲染
     const n = Math.max(1, count);
+    const epos = new Float32Array(n * 3);
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2;
-      const e = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({
-        color: ELECTRON, transparent: true, opacity: 0.92 }));
-      e.scale.setScalar(0.34);
-      e.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
-      spin.add(e);
+      epos[k * 3] = Math.cos(a) * radius;
+      epos[k * 3 + 1] = Math.sin(a) * radius;
+      epos[k * 3 + 2] = 0;
     }
-    rings.push({ spin, speed: 0.5 / Math.sqrt(radius) * (i % 2 ? -1 : 1) });
+    const eGeo = new THREE.BufferGeometry();
+    eGeo.setAttribute("position", new THREE.BufferAttribute(epos, 3));
+    spin.add(new THREE.Points(eGeo, new THREE.PointsMaterial({
+      color: 0x3f6f96, size: 2.6, map: dotTex, transparent: true, opacity: 0.95,
+      depthWrite: false, sizeAttenuation: true })));
+
+    // 电子云：轨道附近的概率薄雾（示意，不额外声明数值）
+    const cn = Math.min(180, 48 + count * 5);
+    const cpos = new Float32Array(cn * 3);
+    const rr = (function (seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296; }; })(z * 131 + i * 17);
+    for (let k = 0; k < cn; k++) {
+      const a = rr() * Math.PI * 2;
+      const rad = radius + (rr() - 0.5) * 0.42;
+      cpos[k * 3] = Math.cos(a) * rad;
+      cpos[k * 3 + 1] = Math.sin(a) * rad;
+      cpos[k * 3 + 2] = (rr() - 0.5) * 0.28;
+    }
+    const cGeo = new THREE.BufferGeometry();
+    cGeo.setAttribute("position", new THREE.BufferAttribute(cpos, 3));
+    spin.add(new THREE.Points(cGeo, new THREE.PointsMaterial({
+      color: 0x7fa4c0, size: 1.6, map: dotTex, transparent: true, opacity: 0.15,
+      depthWrite: false, sizeAttenuation: true })));
+
+    rings.push({ ring, spin, speed: 0.5 / Math.sqrt(radius) * (i % 2 ? -1 : 1) });
   });
 
   const outer = 5.2 + Math.max(0, shells.length - 1) * 2.5 + 1.6;
@@ -127,7 +161,11 @@ function tick() {
   atom.rotation.y += 0.0032;
   atom.rotation.y += 0;
   atom.rotation.z = tiltY * 0.4;
-  for (let i = 0; i < rings.length; i++) rings[i].spin.rotation.z += rings[i].speed * 0.012;
+  for (let i = 0; i < rings.length; i++) {
+    rings[i].spin.rotation.z += rings[i].speed * 0.012;
+    rings[i].ring.rotation.y += 0.0009 * (i % 2 ? 1 : -1);
+    rings[i].ring.rotation.x += 0.0004 * (i % 2 ? -1 : 1);
+  }
   renderer.render(scene, camera);
 }
 
