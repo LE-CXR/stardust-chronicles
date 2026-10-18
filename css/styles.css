@@ -1018,6 +1018,13 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
   font: inherit; font-size: 12px; letter-spacing: .18em; cursor: pointer;
 }
 .af-close:hover { background: rgba(228, 194, 122, .12); }
+@keyframes afUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.atom-focus.is-on .af-head { animation: afUp .5s cubic-bezier(.2,.7,.2,1) .18s both; }
+.atom-focus.is-on .af-foot { animation: afUp .5s cubic-bezier(.2,.7,.2,1) .62s both; }
 @media (prefers-reduced-motion: reduce) {
   .atom-focus, .af-inner { transition: none; }
+  .atom-focus.is-on .af-head, .atom-focus.is-on .af-foot { animation: none; }
 }

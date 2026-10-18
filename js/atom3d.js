@@ -38,6 +38,7 @@ scene.add(atom);
 const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
 let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0;
+let focusT0 = 0, focusHalo = null;
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
@@ -107,6 +108,7 @@ function build(z) {
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending }));
   halo.scale.set(13, 13, 1);
   nuc.add(halo);
+  focusHalo = halo;
   nuc.add(core);
 
   const nucleons = Math.min(48, Math.max(2, Math.round(el.z * 0.9)));
@@ -199,14 +201,22 @@ function tick() {
   raf = requestAnimationFrame(tick);
   if (!canvas.isConnected) return;
   if (document.hidden) return;
+  const now = performance.now();
   if (++frames % 20 === 0 && canvas.clientWidth && canvas.clientWidth !== lastW) { lastW = canvas.clientWidth; sizeToBox(); }
   tiltX += (aimX - tiltX) * 0.06;
   tiltY += (aimY - tiltY) * 0.06;
   atom.rotation.x = -0.18 + tiltX + userX;
+  if (focused) {
+    const k = Math.min(1, Math.max(0, (now - focusT0) / 900));
+    const e = 1 - Math.pow(1 - k, 3);
+    camera.position.z = baseZ * (1.55 - 0.53 * e);
+    camera.position.y = 9 * (1 - e);
+    camera.lookAt(0, 0, 0);
+    if (focusHalo) focusHalo.material.opacity = 0.58 + 0.16 * Math.sin(now * 0.0016);
+  }
   atom.rotation.y += 0.0032;
   atom.rotation.y += 0;
   atom.rotation.z = tiltY * 0.4;
-  const now = performance.now();
   if (nucleus) {
     const k = Math.min(1, Math.max(0, (now - nucT0) / 380));
     nucleus.scale.setScalar(0.001 + 0.999 * (1 - Math.pow(1 - k, 3)));
@@ -285,6 +295,7 @@ function openFocus() {
   focusLayer.querySelector(".af-stage").appendChild(canvas);
   focusLayer.classList.add("is-on");
   userX = 0;
+  focusT0 = performance.now();
   camera.position.z = baseZ * 1.02;
   sizeToBox();
 }
@@ -294,6 +305,8 @@ function closeFocus() {
   focusLayer.classList.remove("is-on");
   holder.insertBefore(canvas, badge);
   camera.position.z = baseZ;
+  camera.position.y = 0;
+  camera.lookAt(0, 0, 0);
   sizeToBox();
 }
 canvas.addEventListener("click", function () { if (!focused) openFocus(); });
