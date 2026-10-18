@@ -239,12 +239,6 @@ function finish() {
   done = true; playing = false;
   cancelAnimationFrame(raf);
   try { audio.pause(); } catch (e) {}
-  /* 换场：暗房先被一张纸色幕布盖上，再让档案从幕布后面显出来 */
-  const veil = byId("handover");
-  if (veil) {
-    veil.classList.add("is-on");
-    setTimeout(() => veil.classList.remove("is-on"), 720);
-  }
   fEl.classList.add("is-out");
   setTimeout(() => {
     fEl.hidden = true;
