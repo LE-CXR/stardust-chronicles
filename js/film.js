@@ -161,10 +161,10 @@ function render(t) {
     x = Math.sin(t * 0.21) * 7; y = 6 + Math.sin(t * 0.17) * 3; z = THREE.MathUtils.lerp(150, 133, k);
   } else if (t <= 89.4) {
     const k = (t - BURST) / (89.4 - BURST);
-    x = Math.sin(t * 0.16) * 9; y = 5 + Math.sin(t * 0.13) * 3; z = THREE.MathUtils.lerp(133, 130, k);
+    x = Math.sin(t * 0.16) * 9; y = -1 + Math.sin(t * 0.13) * 3; z = THREE.MathUtils.lerp(136, 134, k);
   } else {
     const k = clamp01((t - 89.4) / (105.6 - 89.4));
-    x = Math.sin(t * 0.12) * 4; y = 4 + Math.sin(t * 0.1) * 1.5; z = THREE.MathUtils.lerp(130, 136, k);
+    x = Math.sin(t * 0.12) * 4; y = -3 + Math.sin(t * 0.1) * 1.5; z = THREE.MathUtils.lerp(134, 142, k);
   }
   /* 竖屏放不下 18 列的构图：拉远，并在最后两幕改成沿表格横移的镜头 */
   if (innerWidth / innerHeight < 1) {
