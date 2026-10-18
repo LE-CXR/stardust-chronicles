@@ -71,7 +71,7 @@ scene.add(atom);
 const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
 let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0;
-let focusT0 = 0, focusHalo = null, lastCounts = null;
+let focusT0 = 0, focusHalo = null, lastCounts = null, renderOn = true, renders = 0;
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
@@ -253,7 +253,15 @@ function tick() {
   if (!canvas.isConnected) return;
   if (document.hidden) return;
   const now = performance.now();
-  if (++frames % 20 === 0 && canvas.clientWidth && canvas.clientWidth !== lastW) { lastW = canvas.clientWidth; sizeToBox(); }
+  if (++frames % 20 === 0) {
+    if (canvas.clientWidth && canvas.clientWidth !== lastW) { lastW = canvas.clientWidth; sizeToBox(); }
+    /* 影片盖着、或原子滚出视野时停渲染；rAF 继续排队，回来立刻恢复 */
+    const film = document.querySelector(".film");
+    const filmUp = film && !film.hidden;
+    const bb = canvas.getBoundingClientRect();
+    renderOn = !filmUp && bb.bottom > -40 && bb.top < innerHeight + 40;
+  }
+  if (!renderOn && !focused) return;
   tiltX += (aimX - tiltX) * 0.06;
   tiltY += (aimY - tiltY) * 0.06;
   atom.rotation.x = -0.18 + tiltX + userX;
@@ -287,6 +295,7 @@ function tick() {
     r.cMat.opacity += ((lit ? 0.15 : 0.06) - r.cMat.opacity) * 0.2;
     r.eMat.size = highlight === i ? 3.4 : 2.6;
   }
+  renders++;
   renderer.render(scene, camera);
 }
 
@@ -390,7 +399,7 @@ canvas.addEventListener("pointermove", function (e) {
 window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
     nuc: nucleus ? nucleus.scale.x : -1, conn: canvas.isConnected,
-    hidden: document.hidden, z: built, frames: frames, counts: lastCounts };
+    hidden: document.hidden, z: built, frames: frames, renders: renders, counts: lastCounts };
 };
 window.__atomRender = function () { renderer.render(scene, camera); return true; };
 window.__atomPixels = function () {
