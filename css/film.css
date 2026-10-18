@@ -160,6 +160,17 @@
   .toolbar > * { flex: 0 0 auto; }
   .cell.is-dim { opacity: .55; }
   .listen-hint { display: none; }
+  /* 图例改成单行可横滑，省出表格高度；刻度的说明文字在窄屏省略 */
+  .legend {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .legend::-webkit-scrollbar { display: none; }
+  .legend > * { flex: 0 0 auto; }
+  .legend button { font-size: 11px; padding: 4px 9px; }
+  .rowmap-hint { display: none; }
+  /* 手机上档案是盖在表格上的弹层，玻璃再透就压不住字了 */
+  html.cosmic .panel { background: rgba(11, 15, 22, .93); }
 }
 
 /* 影片淡出的同一拍里，档案从下方落位 */

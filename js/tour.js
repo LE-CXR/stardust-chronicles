@@ -60,7 +60,8 @@
     if (!cells.length) return;
     breathe(cells);
     syncDim();
-    setTimeout(function () { cells[0].click(); }, 260);
+    /* 导览自动选中只在桌面做；手机上会把底部档案顶出来 */
+    if (innerWidth >= 1100) setTimeout(function () { cells[0].click(); }, 260);
   }
 
   function boot() {
