@@ -73,7 +73,10 @@
     ty += (py - ty) * 0.06;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    if (nebula) ctx.drawImage(nebula, 0, 0);
+    if (nebula) {
+      /* 星云也跟着指针走，但幅度更小、方向相反，形成第二层深度 */
+      ctx.drawImage(nebula, -W * 0.02 + tx * 22, -H * 0.02 + ty * 16, W * 1.04, H * 1.04);
+    }
     for (var i = 0; i < stars.length; i++) {
       var s = stars[i];
       var ox = tx * 34 * s.d * DPR, oy = ty * 22 * s.d * DPR;
