@@ -928,3 +928,38 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 @media (prefers-reduced-motion: reduce) {
   .cell.is-tour { animation: none; }
 }
+.panel-wrap { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.chapter-card {
+  border: 1px solid rgba(150, 120, 80, .22); border-radius: 14px;
+  background: #fbf6ea; padding: 16px 18px 14px;
+}
+.chapter-card[hidden] { display: none; }
+.cc-kicker { margin: 0 0 7px; font-size: 9.5px; letter-spacing: .3em; color: #b08d4f; }
+.chapter-card h3 {
+  margin: 0 0 8px; font-family: var(--serif, "Noto Serif SC", serif);
+  font-size: 19px; font-weight: 600; letter-spacing: .02em; color: #2b2117;
+}
+.cc-body { margin: 0; font-size: 13px; line-height: 1.9; color: rgba(60, 48, 34, .78); }
+.cc-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+.cc-chips button {
+  border: 1px solid rgba(150, 120, 80, .25); background: transparent;
+  border-radius: 6px; padding: 2px 8px; cursor: pointer;
+  font: 500 11px/1.7 "Consolas", ui-monospace, monospace; color: #6b5433;
+  transition: background .16s ease, border-color .16s ease;
+}
+.cc-chips button:hover { background: rgba(176, 141, 79, .1); border-color: rgba(176, 141, 79, .5); }
+.cc-nav { display: flex; gap: 8px; margin-top: 13px; }
+.cc-nav button {
+  flex: 1; padding: 7px 0; cursor: pointer; font: inherit; font-size: 12px;
+  border: 1px solid rgba(150, 120, 80, .25); border-radius: 8px;
+  background: transparent; color: #6b5433;
+}
+.cc-nav button.is-primary { background: #2b2117; border-color: #2b2117; color: #f6efdf; }
+.cc-nav button:disabled { opacity: .32; cursor: default; }
+/* 桌面上正文已经在右栏，表格下面那块就不再重复 */
+.layout.has-rail + .story { display: none; }
+.atom3d {
+  display: block; width: 100%; height: 232px; margin: 2px auto 6px;
+  cursor: grab; border-radius: 10px;
+  background: radial-gradient(70% 70% at 50% 45%, rgba(176, 141, 79, .10), rgba(176, 141, 79, 0) 72%);
+}

@@ -49,7 +49,15 @@
     var x = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 12));
     var y = r.top - h - 12;
     if (y < 12) y = r.bottom + 12;
-    card.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+    card._pos = { x: Math.round(x), y: Math.round(y) };
+    applyTilt(0, 0);
+  }
+
+
+  function applyTilt(kx, ky) {
+    if (!card || !card._pos) return;
+    card.style.transform = "perspective(700px) translate(" + card._pos.x + "px," + card._pos.y +
+      "px) rotateX(" + (-ky * 5).toFixed(2) + "deg) rotateY(" + (kx * 7).toFixed(2) + "deg)";
   }
 
   function hide() {
@@ -84,6 +92,11 @@
     }, 130);
   }, { passive: true });
 
+  document.addEventListener("pointermove", function (e) {
+    if (!card || !card.classList.contains("is-on") || !cur) return;
+    var r = cur.getBoundingClientRect();
+    applyTilt((e.clientX - (r.left + r.width / 2)) / r.width, (e.clientY - (r.top + r.height / 2)) / r.height);
+  }, { passive: true });
   addEventListener("scroll", hide, { passive: true, capture: true });
   addEventListener("resize", hide, { passive: true });
 })();
