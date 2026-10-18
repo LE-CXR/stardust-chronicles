@@ -11,7 +11,7 @@ fetch("data/isotopes.json").then(function (r) { return r.json(); }).then(functio
 }).catch(function () {});
 const BRASS = 0xd8a55a, ELECTRON = 0x7fa4c0, RING = 0x9a7b4f;
 
-let capEl = null;
+let capEl = null, mixEl = null;
 const canvas = document.createElement("canvas");
 canvas.className = "atom3d";
 canvas.setAttribute("aria-hidden", "true");
@@ -26,6 +26,20 @@ holder.appendChild(badge);
 capEl = document.createElement("p");
 capEl.className = "atom-iso";
 holder.appendChild(capEl);
+mixEl = document.createElement("div");
+mixEl.className = "atom-mix";
+holder.appendChild(mixEl);
+
+const MIXC = ["#d8a55a", "#9fb0c0", "#c2ab84"];
+function renderMix(el) {
+  if (!mixEl) return;
+  const rec = ISO && ISO[String(el.z)];
+  if (!rec || !rec.mixes || !rec.mixes.length) { mixEl.innerHTML = ""; return; }
+  mixEl.innerHTML = rec.mixes.map(function (m, i) {
+    return '<i style="flex:' + (m.abundance * 100).toFixed(3) + ";background:" + MIXC[i % MIXC.length] +
+      '" title="' + el.symbol + "-" + m.A + " " + (m.abundance * 100).toFixed(2) + '%"></i>';
+  }).join("");
+}
 
 function isoText(el) {
   const rec = ISO && ISO[String(el.z)];
@@ -156,6 +170,7 @@ function build(z) {
   if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
   nuc.add(inst);
   if (capEl) capEl.textContent = isoText(el);
+  renderMix(el);
   lastCounts = iso
     ? { z: el.z, protons: protons, neutrons: total - protons, total: total, isotope: iso.A, estimated: false }
     : { z: el.z, protons: null, neutrons: null, total: total, isotope: null, estimated: true };
