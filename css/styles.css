@@ -1106,3 +1106,53 @@ html.cosmic .story .body { color: rgba(232, 236, 242, .68); }
 html.cosmic .story .chip-note { color: rgba(232, 236, 242, .42); }
 html.cosmic .story-nav .btn { color: rgba(241, 238, 231, .82); border-color: rgba(255, 255, 255, .22); }
 html.cosmic .story-nav .btn.primary { color: #1f1c18; background: #f1eee7; border-color: #f1eee7; }
+/* 档案与章节卡：在星空里换成墨色玻璃，但排版仍是原来的 */
+html.cosmic .panel,
+html.cosmic .chapter-card,
+html.cosmic .panel-wrap {
+  --ink: #eceff3;
+  --muted: #9fabb7;
+  --faint: #74808c;
+  --line: rgba(255, 255, 255, .12);
+  --line-strong: rgba(255, 255, 255, .22);
+  --bg-raise: rgba(11, 15, 22, .62);
+  color: var(--ink);
+}
+html.cosmic .panel,
+html.cosmic .chapter-card {
+  background: rgba(11, 15, 22, .62);
+  border: 1px solid rgba(255, 255, 255, .1);
+  backdrop-filter: blur(16px) saturate(120%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .38);
+}
+html.cosmic .chapter-card h3,
+html.cosmic .panel h2 { color: #f4f1ea; }
+html.cosmic .facts > *,
+html.cosmic .config,
+html.cosmic .shell-list li {
+  background: rgba(255, 255, 255, .04);
+  border-color: rgba(255, 255, 255, .1);
+  color: var(--ink);
+}
+html.cosmic .cc-chips button,
+html.cosmic .cc-nav button {
+  color: rgba(241, 238, 231, .8);
+  border-color: rgba(255, 255, 255, .18);
+}
+html.cosmic .cc-nav button.is-primary { background: #e4c27a; border-color: #e4c27a; color: #1f1c18; }
+/* 悬停轻卡：和档案同一块玻璃 */
+html.cosmic .hovercard {
+  background: rgba(11, 15, 22, .74);
+  border-color: rgba(255, 255, 255, .12);
+  backdrop-filter: blur(16px) saturate(120%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+  color: #eceff3;
+}
+html.cosmic .hc-sym { color: #f4f1ea; }
+html.cosmic .hc-names em { color: #eceff3; }
+html.cosmic .hc-names small,
+html.cosmic .hc-meta,
+html.cosmic .hc-foot { color: rgba(232, 236, 242, .5); }
+html.cosmic .hc-spec { background: rgba(255, 255, 255, .08); }
+html.cosmic .hc-spec i { background: #e4c27a; }
+html.cosmic .hc-spec.is-empty { color: rgba(232, 236, 242, .45); }
