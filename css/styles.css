@@ -829,3 +829,24 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 .cell:hover::after,
 .cell[aria-pressed="true"]::after { opacity: .95; }
 .cell .zh { position: relative; z-index: 1; }
+.rowmap {
+  display: flex; align-items: center; gap: 12px;
+  margin: 8px 2px 2px; padding: 0 2px;
+}
+.rowmap[hidden] { display: none; }
+.rowmap-ticks {
+  display: grid; grid-template-columns: repeat(18, 1fr); gap: 3px;
+  flex: 1 1 auto; height: 22px; align-items: end;
+}
+.rowmap-tick {
+  appearance: none; border: 0; padding: 0; cursor: pointer;
+  height: 8px; border-radius: 2px; background: rgba(120, 96, 64, .26);
+  transition: height .18s ease, background .18s ease;
+}
+.rowmap-tick.is-on { height: 14px; background: rgba(120, 96, 64, .55); }
+.rowmap-tick.is-edge { height: 18px; background: #b08d4f; }
+.rowmap-hint {
+  margin: 0; flex: 0 0 auto; font-size: 11px; letter-spacing: .12em;
+  color: rgba(80, 64, 44, .55);
+}
+@media (min-width: 760px) { .rowmap { display: none; } }

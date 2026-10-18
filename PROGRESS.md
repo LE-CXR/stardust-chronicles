@@ -20,3 +20,5 @@
 - 验证：零 console 错误；桌面/手机都能放映到结束并交还表格；`file://` 下自动跳过影片（浏览器禁止 ES 模块）。
 - 坑：本地 `python -m http.server` 不支持 Range，音频 seek 会被拒绝——调试画面用 `window.__filmSeek(ms)`，
   它同时是出片用的外部时钟。
+- 窄屏导航：`js/mobile-map.js` 在表格下方加 18 族刻度，点一下跳到该族；实测点第 17 族后
+  `scrollLeft=558`，可见区刻度高亮。`星图` 模式下自动隐藏。
