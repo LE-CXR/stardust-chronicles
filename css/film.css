@@ -149,3 +149,8 @@
 @media (max-width: 760px) {
   .listen-hint { bottom: 96px; font-size: 12px; padding: 9px 14px; }
 }
+.handover {
+  position: fixed; inset: 0; z-index: 95; pointer-events: none;
+  background: #fbf6ea; opacity: 0; transition: opacity 620ms ease;
+}
+.handover.is-on { opacity: 1; }
