@@ -161,3 +161,16 @@
   .cell.is-dim { opacity: .55; }
   .listen-hint { display: none; }
 }
+
+/* 影片淡出的同一拍里，档案从下方落位 */
+@keyframes archiveIn {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+body.archive-in .layout,
+body.archive-in .topbar {
+  animation: archiveIn 900ms cubic-bezier(.2,.7,.2,1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.archive-in .layout, body.archive-in .topbar { animation: none; }
+}

@@ -239,6 +239,7 @@ function finish() {
   done = true; playing = false;
   cancelAnimationFrame(raf);
   try { audio.pause(); } catch (e) {}
+  document.body.classList.add("archive-in");
   fEl.classList.add("is-out");
   setTimeout(() => {
     fEl.hidden = true;
