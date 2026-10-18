@@ -9,7 +9,7 @@
   var ctx = canvas.getContext("2d");
   var W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
   var stars = [], nebula = null;
-  var px = 0, py = 0, tx = 0, ty = 0, t0 = performance.now();
+  var px = 0, py = 0, tx = 0, ty = 0, t0 = performance.now(), draws = 0;
 
   function rng(s) {
     return function () { s |= 0; s = s + 0x6D2B79F5 | 0;
@@ -65,6 +65,9 @@
   function draw(now) {
     requestAnimationFrame(draw);
     if (document.hidden) return;
+    var film = document.querySelector(".film");
+    if (film && !film.hidden) return;   /* 影片盖着时不画背景 */
+    draws++;
     var t = (now - t0) / 1000;
     tx += (px - tx) * 0.06;
     ty += (py - ty) * 0.06;
@@ -94,4 +97,5 @@
   document.documentElement.classList.add("cosmic");
   resize();
   requestAnimationFrame(draw);
+  window.__cosmosDraws = function () { return draws; };
 })();
