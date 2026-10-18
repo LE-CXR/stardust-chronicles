@@ -149,3 +149,15 @@
 @media (max-width: 760px) {
   .listen-hint { bottom: 96px; font-size: 12px; padding: 9px 14px; }
 }
+
+/* 窄屏走查修正：工具栏可横滑、压暗别太狠、提示不压档案 */
+@media (max-width: 760px) {
+  .toolbar {
+    overflow-x: auto; flex-wrap: nowrap; gap: 8px;
+    padding-bottom: 4px; scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar > * { flex: 0 0 auto; }
+  .cell.is-dim { opacity: .55; }
+  .listen-hint { display: none; }
+}
