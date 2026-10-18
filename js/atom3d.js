@@ -328,6 +328,8 @@ function tick() {
 }
 
 /* 面板每次重绘都会换掉内容，但 canvas 节点可以整体搬过去，WebGL 上下文不丢 */
+let mountedAt = 0;
+
 function mount() {
   const svg = document.querySelector("#panel .shell-svg");
   if (!svg) return;
@@ -338,9 +340,20 @@ function mount() {
     if (titles[i].textContent.trim() === "\u7535\u5b50\u5c42") { anchor = titles[i]; break; }
   }
   const head = document.querySelector("#panel .panel-head");
-  if (head) head.insertAdjacentElement("afterend", holder);
-  else if (anchor) anchor.insertAdjacentElement("afterend", holder);
-  else svg.parentElement.insertBefore(canvas, svg.nextSibling);
+  /* 只在位置不对时才搬。搬一个已存在的节点本身就会触发 childList 变更，
+     若无条件搬，下面的 MutationObserver 会每 30ms 再进来一次，形成永久循环。 */
+  function putAfter(node) {
+    if (!node) return false;
+    if (holder.parentElement === node.parentElement && holder.previousElementSibling === node) return true;
+    node.insertAdjacentElement("afterend", holder);
+    return true;
+  }
+  if (!putAfter(head) && !putAfter(anchor)) {
+    if (svg.parentElement && holder.previousElementSibling !== svg) {
+      svg.parentElement.insertBefore(holder, svg.nextSibling);
+    }
+  }
+  mountedAt = performance.now();
   sizeToBox();
   const cell = document.querySelector('.cell[aria-pressed="true"]');
   if (cell && Number(cell.dataset.z) !== built) build(cell.dataset.z);
@@ -363,7 +376,11 @@ canvas.addEventListener("pointerleave", () => { aimX = 0; aimY = 0; });
 
 const panel = document.getElementById("panel");
 if (panel) {
-  new MutationObserver(() => setTimeout(mount, 30)).observe(panel, { childList: true, subtree: true });
+  new MutationObserver(() => {
+    /* 忽略 mount 自己造成的变更；真换元素时再挂一次 */
+    if (performance.now() - mountedAt < 120) return;
+    setTimeout(mount, 30);
+  }).observe(panel, { childList: true, subtree: true });
   addEventListener("resize", sizeToBox, { passive: true });
   mount();
   tick();

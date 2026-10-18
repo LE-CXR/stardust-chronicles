@@ -36,15 +36,22 @@
 
   var panel = document.getElementById("panel");
   if (panel && window.MutationObserver) {
-    var first = true, lastRun = 0;
+    var first = true, lastRun = 0, lastSym = "";
     new MutationObserver(function () {
       if (first) { first = false; return; }
+      /* 窄屏档案是底部抽屉：它自己的 translateY 不能被入场动画的 transform 顶掉，
+         而且重播一次就是一次 8px 弹跳，所以这里直接不做。 */
+      if (innerWidth < 1100) return;
+      var sym = panel.querySelector(".symbol-xl");
+      var key = sym ? sym.textContent.trim() : "";
+      if (!key || key === lastSym) return;
       var now = performance.now();
       if (now - lastRun < 350) return;
       lastRun = now;
+      lastSym = key;
       panel.classList.remove("depth-in");
       void panel.offsetWidth;
       panel.classList.add("depth-in");
-    }).observe(panel, { childList: true });
+    }).observe(panel, { childList: true, subtree: true });
   }
 })();
