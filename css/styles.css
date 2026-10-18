@@ -1045,3 +1045,8 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
   .atom-focus, .af-inner { transition: none; }
   .atom-focus.is-on .af-head, .atom-focus.is-on .af-foot { animation: none; }
 }
+.cell:focus-visible {
+  outline: 2px solid #b08d4f;
+  outline-offset: 2px;
+  z-index: 2;
+}
