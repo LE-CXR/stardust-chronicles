@@ -10,6 +10,23 @@ const canvas = document.createElement("canvas");
 canvas.className = "atom3d";
 canvas.setAttribute("aria-hidden", "true");
 
+const holder = document.createElement("div");
+holder.className = "atom-holder";
+holder.appendChild(canvas);
+const badge = document.createElement("span");
+badge.className = "atom-badge";
+badge.textContent = "点击展开";
+holder.appendChild(badge);
+
+const focusLayer = document.createElement("div");
+focusLayer.className = "atom-focus";
+focusLayer.innerHTML =
+  '<div class="af-inner"><div class="af-head"><b class="af-sym"></b><span class="af-name"></span>' +
+  '<span class="af-note">拖动旋转 · Esc 关闭</span></div><div class="af-stage"></div>' +
+  '<div class="af-foot"><span class="af-shells"></span>' +
+  '<button type="button" class="af-close">关闭</button></div></div>';
+document.body.appendChild(focusLayer);
+
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 const scene = new THREE.Scene();
@@ -20,6 +37,7 @@ const atom = new THREE.Group();
 scene.add(atom);
 const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
+let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0;
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
@@ -163,7 +181,8 @@ function build(z) {
   });
 
   const outer = 5.2 + Math.max(0, shells.length - 1) * 2.5 + 1.6;
-  camera.position.z = outer / Math.tan(Math.PI * 19 / 180) * 1.05;
+  baseZ = outer / Math.tan(Math.PI * 19 / 180) * 1.05;
+  camera.position.z = baseZ * (focused ? 0.72 : 1);
   camera.lookAt(0, 0, 0);
   sizeToBox();
 }
@@ -183,7 +202,7 @@ function tick() {
   if (++frames % 20 === 0 && canvas.clientWidth && canvas.clientWidth !== lastW) { lastW = canvas.clientWidth; sizeToBox(); }
   tiltX += (aimX - tiltX) * 0.06;
   tiltY += (aimY - tiltY) * 0.06;
-  atom.rotation.x = -0.18 + tiltX;
+  atom.rotation.x = -0.18 + tiltX + userX;
   atom.rotation.y += 0.0032;
   atom.rotation.y += 0;
   atom.rotation.z = tiltY * 0.4;
@@ -221,8 +240,8 @@ function mount() {
     if (titles[i].textContent.trim() === "\u7535\u5b50\u5c42") { anchor = titles[i]; break; }
   }
   const head = document.querySelector("#panel .panel-head");
-  if (head) head.insertAdjacentElement("afterend", canvas);
-  else if (anchor) anchor.insertAdjacentElement("afterend", canvas);
+  if (head) head.insertAdjacentElement("afterend", holder);
+  else if (anchor) anchor.insertAdjacentElement("afterend", holder);
   else svg.parentElement.insertBefore(canvas, svg.nextSibling);
   sizeToBox();
   const cell = document.querySelector('.cell[aria-pressed="true"]');
@@ -251,6 +270,50 @@ if (panel) {
   mount();
   tick();
 }
+
+
+/* ---------- 专注模式：把同一块画布搬进全屏展台，WebGL 上下文不重建 ---------- */
+function openFocus() {
+  const cell = document.querySelector('.cell[aria-pressed="true"]');
+  const el = cell ? BY_Z.get(Number(cell.dataset.z)) : null;
+  if (!el) return;
+  focused = true;
+  focusLayer.querySelector(".af-sym").textContent = el.symbol;
+  focusLayer.querySelector(".af-name").textContent = el.nameZh + " · " + (el.nameEn || "");
+  focusLayer.querySelector(".af-shells").textContent =
+    (el.shells || []).map(function (c, i) { return String.fromCharCode(75 + i) + " " + c; }).join("   ");
+  focusLayer.querySelector(".af-stage").appendChild(canvas);
+  focusLayer.classList.add("is-on");
+  userX = 0;
+  camera.position.z = baseZ * 1.02;
+  sizeToBox();
+}
+function closeFocus() {
+  if (!focused) return;
+  focused = false;
+  focusLayer.classList.remove("is-on");
+  holder.insertBefore(canvas, badge);
+  camera.position.z = baseZ;
+  sizeToBox();
+}
+canvas.addEventListener("click", function () { if (!focused) openFocus(); });
+focusLayer.addEventListener("click", function (e) {
+  if (e.target === focusLayer || e.target.classList.contains("af-close")) closeFocus();
+});
+addEventListener("keydown", function (e) { if (e.key === "Escape") closeFocus(); });
+canvas.addEventListener("pointerdown", function (e) {
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+});
+canvas.addEventListener("pointermove", function (e) {
+  if (!dragging) return;
+  atom.rotation.y += (e.clientX - lastX) * 0.006;
+  userX = Math.max(-1.1, Math.min(1.1, userX + (e.clientY - lastY) * 0.004));
+  lastX = e.clientX; lastY = e.clientY;
+});
+["pointerup", "pointercancel"].forEach(function (ev) {
+  canvas.addEventListener(ev, function () { dragging = false; });
+});
 
 window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
