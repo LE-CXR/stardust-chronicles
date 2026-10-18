@@ -4,6 +4,11 @@ import * as THREE from "../lib/three.module.js";
    电子数来自 shells（真实数据）；轨道形状仍是示意，面板里的说明照旧。 */
 
 const BY_Z = new Map((window.STARDUST_ELEMENTS || []).map((e) => [e.z, e]));
+let ISO = null;
+fetch("data/isotopes.json").then(function (r) { return r.json(); }).then(function (d) {
+  ISO = d.elements || {};
+  if (built) build(built);
+}).catch(function () {});
 const BRASS = 0xd8a55a, ELECTRON = 0x7fa4c0, RING = 0x9a7b4f;
 
 const canvas = document.createElement("canvas");
@@ -38,7 +43,7 @@ scene.add(atom);
 const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
 let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0;
-let focusT0 = 0, focusHalo = null;
+let focusT0 = 0, focusHalo = null, lastCounts = null;
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
@@ -103,26 +108,42 @@ function build(z) {
   nuc.scale.setScalar(0.001);
 
   // 原子核：一个发光芯，外面裹着若干核子（按序数缩放，最多 48 颗）
-  const core = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: BRASS, transparent: true, opacity: 0.95 }));
-  core.scale.setScalar(1.6);
+  const core = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: BRASS, transparent: true, opacity: 0.4 }));
+  core.scale.setScalar(0.6);
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending }));
   halo.scale.set(13, 13, 1);
   nuc.add(halo);
   focusHalo = halo;
   nuc.add(core);
 
-  const nucleons = Math.min(48, Math.max(2, Math.round(el.z * 0.9)));
+  /* 核子：有天然同位素数据就按真实质子/中子数摆，没有就退回示意 */
+  const iso = ISO && ISO[String(el.z)];
+  const protons = el.z;
+  const total = iso ? Math.max(protons, iso.A) : Math.min(48, Math.max(2, Math.round(el.z * 0.9)));
   const rnd = (function (s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0;
     let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
     return ((t ^ t >>> 14) >>> 0) / 4294967296; }; })(z * 7919);
-  for (let i = 0; i < nucleons; i++) {
-    const r = 2.1 * Math.cbrt(rnd()), th = rnd() * 6.283, ph = Math.acos(2 * rnd() - 1);
-    const m = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({
-      color: i % 2 ? BRASS : 0xf1e3c8, transparent: true, opacity: 0.55 }));
-    m.scale.setScalar(0.34);
-    m.position.set(r * Math.sin(ph) * Math.cos(th), r * Math.sin(ph) * Math.sin(th), r * Math.cos(ph));
-    nuc.add(m);
+  const nucR = Math.min(5.0, Math.max(1.0, 3.2 * Math.cbrt(total / 56)));
+  const inst = new THREE.InstancedMesh(sphereGeo,
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.92 }), total);
+  const dummy = new THREE.Object3D();
+  const cProton = new THREE.Color(BRASS), cNeutron = new THREE.Color(0x9fb0c0),
+    cSchematic = new THREE.Color(0xc2ab84);
+  for (let i = 0; i < total; i++) {
+    const u = rnd(), th = rnd() * 6.283, ph = Math.acos(2 * rnd() - 1);
+    const r = nucR * Math.cbrt(u) * 0.82;
+    dummy.position.set(r * Math.sin(ph) * Math.cos(th), r * Math.sin(ph) * Math.sin(th), r * Math.cos(ph));
+    dummy.scale.setScalar(total <= 4 ? 0.42 : 0.34);
+    dummy.updateMatrix();
+    inst.setMatrixAt(i, dummy.matrix);
+    inst.setColorAt(i, iso ? (i < protons ? cProton : cNeutron) : cSchematic);
   }
+  inst.instanceMatrix.needsUpdate = true;
+  if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+  nuc.add(inst);
+  lastCounts = iso
+    ? { z: el.z, protons: protons, neutrons: total - protons, total: total, isotope: iso.A, estimated: false }
+    : { z: el.z, protons: null, neutrons: null, total: total, isotope: null, estimated: true };
 
   // 电子层：第 i 层一个环，电子沿环均匀排布并绕行
   const shells = el.shells || [];
@@ -289,7 +310,9 @@ function openFocus() {
   if (!el) return;
   focused = true;
   focusLayer.querySelector(".af-sym").textContent = el.symbol;
-  focusLayer.querySelector(".af-name").textContent = el.nameZh + " · " + (el.nameEn || "");
+  const iso = ISO && ISO[String(el.z)];
+  focusLayer.querySelector(".af-name").textContent = el.nameZh + " · " + (el.nameEn || "") +
+    (iso ? " · " + el.symbol + "-" + iso.A + " · 丰度 " + (iso.abundance * 100).toFixed(2) + "%" : " · 无天然丰度数据");
   focusLayer.querySelector(".af-shells").textContent =
     (el.shells || []).map(function (c, i) { return String.fromCharCode(75 + i) + " " + c; }).join("   ");
   focusLayer.querySelector(".af-stage").appendChild(canvas);
@@ -331,7 +354,7 @@ canvas.addEventListener("pointermove", function (e) {
 window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
     nuc: nucleus ? nucleus.scale.x : -1, conn: canvas.isConnected,
-    hidden: document.hidden, z: built, frames: frames };
+    hidden: document.hidden, z: built, frames: frames, counts: lastCounts };
 };
 window.__atomRender = function () { renderer.render(scene, camera); return true; };
 window.__atomPixels = function () {
