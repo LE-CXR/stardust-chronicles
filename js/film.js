@@ -139,8 +139,8 @@ function render(t) {
     n.tile.rotation.x = (1 - e) * n.rx;
     n.tile.rotation.y = (1 - e) * n.ry;
     let boost = 1;
-    if (n.z === 1) boost += 0.9 * smoothstep(89.4, 90.6, t) * (1 - smoothstep(93.2, 94.4, t));
-    if (n.z === 11) boost += 0.9 * smoothstep(93.6, 94.8, t) * (1 - smoothstep(97.4, 98.6, t));
+    if (n.z === 1) boost += 0.5 * smoothstep(89.4, 90.6, t) * (1 - smoothstep(93.2, 94.4, t));
+    if (n.z === 11) boost += 0.5 * smoothstep(93.6, 94.8, t) * (1 - smoothstep(97.4, 98.6, t));
     const scale = vis * (0.55 + 0.45 * e) * boost;
     n.tile.scale.setScalar(scale);
     const hs = (11.5 + 5 * (1 - e)) * scale;
@@ -164,7 +164,7 @@ function render(t) {
     x = Math.sin(t * 0.16) * 9; y = -1 + Math.sin(t * 0.13) * 3; z = THREE.MathUtils.lerp(136, 134, k);
   } else {
     const k = clamp01((t - 89.4) / (105.6 - 89.4));
-    x = Math.sin(t * 0.12) * 4; y = -3 + Math.sin(t * 0.1) * 1.5; z = THREE.MathUtils.lerp(134, 142, k);
+    x = Math.sin(t * 0.12) * 4; y = -8 + Math.sin(t * 0.1) * 1.5; z = THREE.MathUtils.lerp(150, 158, k);
   }
   /* 竖屏放不下 18 列的构图：拉远，并在最后两幕改成沿表格横移的镜头 */
   if (innerWidth / innerHeight < 1) {
