@@ -819,3 +819,13 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
   .cluster.c1 { left: 8%; }
   .cluster.c3 { left: auto; right: 8%; }
 }
+.cell { position: relative; }
+/* 底部那条光谱条码：有强线才有，查不到就空着 */
+.cell::after {
+  content: ""; position: absolute; left: 7px; right: 7px; bottom: 4px; height: 2px;
+  background-image: var(--spec); background-repeat: no-repeat; background-size: 100% 100%;
+  opacity: .38; pointer-events: none; transition: opacity .18s ease, filter .18s ease;
+}
+.cell:hover::after,
+.cell[aria-pressed="true"]::after { opacity: .95; }
+.cell .zh { position: relative; z-index: 1; }

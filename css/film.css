@@ -76,6 +76,8 @@
   cursor: pointer; padding: .6em .4em;
 }
 .film-skip:hover { color: #cfdae4; }
+/* 入场门还在的时候，"跳过"藏在门后面，既点不到也不该露出来 */
+.film:has(.film-gate:not(.is-out)) .film-skip { display: none; }
 
 .film-flash {
   position: absolute; inset: 0; background: #fff; opacity: 0; z-index: 5;

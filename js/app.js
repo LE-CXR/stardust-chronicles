@@ -136,7 +136,7 @@
     ELEMENTS.forEach((el) => {
       const row = el.row <= 7 ? el.row + 1 : el.row === 9 ? 10 : 11;
       bits.push(
-        `<button type="button" class="cell cat-${el.category}" data-z="${el.z}" style="grid-row:${row};grid-column:${el.col + 1};--d:${el.col * 34 + el.row * 14}" aria-label="${esc(el.nameZh)}，${el.symbol}，原子序数 ${el.z}" aria-pressed="false">` +
+        `<button type="button" class="cell cat-${el.category}" data-z="${el.z}" style="grid-row:${row};grid-column:${el.col + 1};--d:${el.col * 34 + el.row * 14};--spec:${specGradient(el.lines)}" aria-label="${esc(el.nameZh)}，${el.symbol}，原子序数 ${el.z}" aria-pressed="false">` +
           `<span class="z">${el.z}</span><span class="sym">${esc(el.symbol)}</span><span class="zh">${esc(el.nameZh)}</span>` +
           `</button>`
       );
@@ -197,6 +197,23 @@
     node.classList.remove("is-entering");
     void node.offsetWidth;
     node.classList.add("is-entering");
+  }
+
+  /* 每格底部那条细线，就是它自己的可见光谱：380–780 nm 里每条强线一个刻度 */
+  function specGradient(lines) {
+    if (!lines || !lines.length) return "none";
+    let imax = 1;
+    lines.forEach((l) => { if ((l.intensity || 1) > imax) imax = l.intensity || 1; });
+    const parts = [];
+    lines.forEach((l) => {
+      const x = ((l.nm - 380) / 400) * 100;
+      const w = 0.5;
+      const a = Math.max(0.4, Math.min(1, (l.intensity || 1) / imax)).toFixed(2);
+      parts.push(
+        `transparent ${(x - w).toFixed(2)}%, rgba(38,28,18,${a}) ${(x - w).toFixed(2)}% ${(x + w).toFixed(2)}%, transparent ${(x + w).toFixed(2)}%`
+      );
+    });
+    return `linear-gradient(90deg, ${parts.join(", ")})`;
   }
 
   function renderCells() {
