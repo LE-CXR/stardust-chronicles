@@ -19,6 +19,7 @@ camera.position.set(0, 0, 40);
 const atom = new THREE.Group();
 scene.add(atom);
 const rings = [];
+let nucleus = null, nucT0 = 0;
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
@@ -61,14 +62,18 @@ function build(z) {
   if (!el) return;
   clearAtom();
   built = Number(z);
+  const nuc = new THREE.Group();
+  atom.add(nuc);
+  nucleus = nuc; nucT0 = performance.now();
+  nuc.scale.setScalar(0.001);
 
   // 原子核：一个发光芯，外面裹着若干核子（按序数缩放，最多 48 颗）
   const core = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: BRASS, transparent: true, opacity: 0.95 }));
   core.scale.setScalar(1.6);
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending }));
   halo.scale.set(13, 13, 1);
-  atom.add(halo);
-  atom.add(core);
+  nuc.add(halo);
+  nuc.add(core);
 
   const nucleons = Math.min(48, Math.max(2, Math.round(el.z * 0.9)));
   const rnd = (function (s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0;
@@ -80,7 +85,7 @@ function build(z) {
       color: i % 2 ? BRASS : 0xf1e3c8, transparent: true, opacity: 0.55 }));
     m.scale.setScalar(0.34);
     m.position.set(r * Math.sin(ph) * Math.cos(th), r * Math.sin(ph) * Math.sin(th), r * Math.cos(ph));
-    atom.add(m);
+    nuc.add(m);
   }
 
   // 电子层：第 i 层一个环，电子沿环均匀排布并绕行
@@ -88,7 +93,9 @@ function build(z) {
   shells.forEach((count, i) => {
     const radius = 5.2 + i * 2.5;
     const ring = new THREE.Group();
-    ring.rotation.set(1.25 - i * 0.3, i * 0.8, i * 0.4);
+    const bx = 1.25 - i * 0.3, by = i * 0.8, bz = i * 0.4;
+    ring.rotation.set(bx, by, bz);
+    ring.scale.setScalar(0.001);
     atom.add(ring);
 
     const line = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
@@ -133,7 +140,8 @@ function build(z) {
       color: 0x7fa4c0, size: 1.6, map: dotTex, transparent: true, opacity: 0.15,
       depthWrite: false, sizeAttenuation: true })));
 
-    rings.push({ ring, spin, speed: 0.5 / Math.sqrt(radius) * (i % 2 ? -1 : 1) });
+    rings.push({ ring, spin, speed: 0.5 / Math.sqrt(radius) * (i % 2 ? -1 : 1),
+      t0: performance.now() + i * 70, bx, by, bz });
   });
 
   const outer = 5.2 + Math.max(0, shells.length - 1) * 2.5 + 1.6;
@@ -161,10 +169,20 @@ function tick() {
   atom.rotation.y += 0.0032;
   atom.rotation.y += 0;
   atom.rotation.z = tiltY * 0.4;
+  const now = performance.now();
+  if (nucleus) {
+    const k = Math.min(1, Math.max(0, (now - nucT0) / 380));
+    nucleus.scale.setScalar(0.001 + 0.999 * (1 - Math.pow(1 - k, 3)));
+  }
   for (let i = 0; i < rings.length; i++) {
-    rings[i].spin.rotation.z += rings[i].speed * 0.012;
-    rings[i].ring.rotation.y += 0.0009 * (i % 2 ? 1 : -1);
-    rings[i].ring.rotation.x += 0.0004 * (i % 2 ? -1 : 1);
+    const r = rings[i];
+    const k = Math.min(1, Math.max(0, (now - r.t0) / 430));
+    const e = 1 - Math.pow(1 - k, 3);
+    r.ring.scale.setScalar(0.001 + 0.999 * e);
+    r.ring.rotation.y = r.by + (1 - e) * 1.1;
+    r.ring.rotation.x = r.bx + (1 - e) * 0.35;
+    r.ring.rotation.z = r.bz;
+    r.spin.rotation.z += r.speed * 0.012;
   }
   renderer.render(scene, camera);
 }
@@ -202,3 +220,27 @@ if (panel) {
   mount();
   tick();
 }
+
+window.__atomDebug = function () {
+  return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
+    nuc: nucleus ? nucleus.scale.x : -1, conn: canvas.isConnected,
+    hidden: document.hidden, z: built, frames: frames };
+};
+window.__atomRender = function () { renderer.render(scene, camera); return true; };
+window.__atomPixels = function () {
+  const gl = renderer.getContext();
+  const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+  const buf = new Uint8Array(w * h * 4);
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+  let sum = 0, nz = 0;
+  for (let i = 0; i < buf.length; i += 4) { sum += buf[i + 3]; if (buf[i + 3] > 8) nz++; }
+  return { w: w, h: h, meanA: +(sum / (w * h)).toFixed(2), nz: nz };
+};
+window.__atomInfo = function () {
+  renderer.render(scene, camera);
+  const i = renderer.info.render;
+  return { calls: i.calls, tris: i.triangles, points: i.points,
+    camZ: +camera.position.z.toFixed(2), aspect: +camera.aspect.toFixed(3),
+    children: atom.children.length, atomScale: +atom.scale.x.toFixed(3),
+    atomRotY: +atom.rotation.y.toFixed(3) };
+};

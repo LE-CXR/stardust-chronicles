@@ -36,9 +36,12 @@
 
   var panel = document.getElementById("panel");
   if (panel && window.MutationObserver) {
-    var first = true;
+    var first = true, lastRun = 0;
     new MutationObserver(function () {
       if (first) { first = false; return; }
+      var now = performance.now();
+      if (now - lastRun < 350) return;
+      lastRun = now;
       panel.classList.remove("depth-in");
       void panel.offsetWidth;
       panel.classList.add("depth-in");
