@@ -1256,6 +1256,16 @@ html.cosmic .symbol-xl { text-shadow: 0 0 30px rgba(255, 255, 255, .1), 0 8px 40
 .atom3d { position: relative; z-index: 1; }
 @media (min-width: 760px) { .atom3d { height: 252px; } }
 
+/* 拖原子的时候整页不许选字（长按拖动会把正文刷成蓝色） */
+.atom3d, .atom-holder { user-select: none; -webkit-user-select: none; }
+.atom3d { touch-action: none; }
+body.atom-dragging, body.atom-dragging * {
+  user-select: none !important; -webkit-user-select: none !important;
+}
+body.atom-dragging { cursor: grabbing; }
+.flame-slot, .flame3d { user-select: none; -webkit-user-select: none; }
+.flame3d { touch-action: pan-y; }
+
 /* 同位素说明在深色面板里原来用的是纸面文字色，几乎看不见 */
 html.cosmic .atom-iso { color: rgba(232, 236, 242, .55); }
 html.cosmic .atom-mix { background: rgba(255, 255, 255, .1); }

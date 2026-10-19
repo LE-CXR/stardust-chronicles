@@ -80,7 +80,7 @@ scene.add(atom);
 
 const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
-let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0;
+let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0, dragMoved = 0;
 let focusT0 = 0, focusHalo = null, lastCounts = null, renderOn = true, renders = 0;
 let nucInst = null, nucBase = null, nucPhase = null, nucScale = 0.3, jitterFrame = 0;
 const jDummy = new THREE.Object3D();
@@ -509,24 +509,44 @@ function closeFocus() {
   camera.lookAt(0, 0, 0);
   sizeToBox();
 }
-canvas.addEventListener("click", function () { if (!focused) openFocus(); });
+canvas.addEventListener("click", function () {
+  /* 拖过模型就别顺手打开专注模式了 */
+  if (dragMoved > 8) { dragMoved = 0; return; }
+  if (!focused) openFocus();
+});
 focusLayer.addEventListener("click", function (e) {
   if (e.target === focusLayer || e.target.classList.contains("af-close")) closeFocus();
 });
 addEventListener("keydown", function (e) { if (e.key === "Escape") closeFocus(); });
+function endDrag(e) {
+  if (!dragging) return;
+  dragging = false;
+  document.body.classList.remove("atom-dragging");
+  try { if (e && e.pointerId != null) canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+}
+
 canvas.addEventListener("pointerdown", function (e) {
-  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  /* 拖模型不是选字：阻止默认行为，并清掉可能已经开始的选区 */
+  e.preventDefault();
+  dragging = true; lastX = e.clientX; lastY = e.clientY; dragMoved = 0;
+  document.body.classList.add("atom-dragging");
+  try { const s = window.getSelection(); if (s) s.removeAllRanges(); } catch (err) {}
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
 });
+/* 双保险：画布内的拖选/原生拖拽一律拦掉 */
+canvas.addEventListener("selectstart", function (e) { e.preventDefault(); });
+canvas.addEventListener("dragstart", function (e) { e.preventDefault(); });
 canvas.addEventListener("pointermove", function (e) {
   if (!dragging) return;
+  dragMoved += Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY);
   atom.rotation.y += (e.clientX - lastX) * 0.006;
   userX = Math.max(-1.1, Math.min(1.1, userX + (e.clientY - lastY) * 0.004));
   lastX = e.clientX; lastY = e.clientY;
 });
 ["pointerup", "pointercancel"].forEach(function (ev) {
-  canvas.addEventListener(ev, function () { dragging = false; });
+  canvas.addEventListener(ev, endDrag);
 });
+addEventListener("blur", endDrag);
 
 window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
