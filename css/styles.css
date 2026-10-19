@@ -970,6 +970,12 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 @media (min-width: 1100px) {
   .layout.has-rail { grid-template-columns: 176px minmax(0, 1fr) 400px; }
 }
+/* 1100–1359：导轨 + 400px 档案会把表格压到 20 多像素一格，这一段先收起导轨；
+   章节的上一章/下一章在档案顶部仍然可用。 */
+@media (min-width: 1100px) and (max-width: 1359px) {
+  .layout.has-rail { grid-template-columns: minmax(0, 1fr) 400px; }
+  .rail { display: none; }
+}
 /* 导览：一章的格子错峰亮一次，只亮一遍，不做常亮装饰 */
 .cell.is-tour {
   animation: tourBreathe 1.6s ease both;

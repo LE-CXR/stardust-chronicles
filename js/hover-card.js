@@ -44,11 +44,15 @@
   }
 
   function place(cell) {
-    var r = cell.getBoundingClientRect();
     var w = card.offsetWidth, h = card.offsetHeight;
-    var x = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 12));
-    var y = r.top - h - 12;
-    if (y < 12) y = r.bottom + 12;
+    /* 别落在周期表上：贴着右侧档案栏的底部出现，只临时盖住档案自己的页脚。
+       窄屏（抽屉/底弹层）不放浮卡，点一下就能看完整档案。 */
+    var panel = document.getElementById("panel");
+    if (!panel) return;
+    var pr = panel.getBoundingClientRect();
+    var x = Math.max(12, Math.min(pr.right - w - 12, innerWidth - w - 12));
+    var y = Math.min(pr.bottom, innerHeight) - h - 12;
+    if (y < 12) y = 12;
     card._pos = { x: Math.round(x), y: Math.round(y) };
     applyTilt(0, 0);
   }
@@ -67,6 +71,7 @@
   }
 
   document.addEventListener("pointerover", function (e) {
+    if (innerWidth < 1100) return;
     var cell = e.target.closest ? e.target.closest(".cell[data-z]") : null;
     if (!cell || cell === cur) return;
     cur = cell;
