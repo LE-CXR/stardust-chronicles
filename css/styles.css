@@ -1265,6 +1265,13 @@ html.cosmic .symbol-xl { text-shadow: 0 0 30px rgba(255, 255, 255, .1), 0 8px 40
   color: rgba(232, 236, 242, .42);
 }
 .as-read { color: rgba(228, 194, 122, .9); letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+.as-tip {
+  flex: 1; text-align: center;
+  font-size: 9.5px; letter-spacing: .1em;
+  color: rgba(232, 236, 242, .34);
+  opacity: 0; transition: opacity .2s ease;
+}
+.atom-holder:hover .as-tip { opacity: 1; }
 .as-rail {
   position: relative; height: 22px; cursor: ew-resize;
   touch-action: none; border-radius: 6px;
@@ -1290,6 +1297,7 @@ html.cosmic .symbol-xl { text-shadow: 0 0 30px rgba(255, 255, 255, .1), 0 8px 40
 }
 .as-rail:focus-visible { outline: 1px dashed rgba(228, 194, 122, .6); outline-offset: 4px; }
 @media (max-width: 760px) { .as-rail { height: 28px; } .as-track, .as-fill { top: 13px; } .as-knob { top: 8px; } .as-ticks i { top: 9px; } }
+@media (max-width: 760px) { .as-tip { display: none; } }
 
 /* 拖原子的时候整页不许选字（长按拖动会把正文刷成蓝色） */
 .atom3d, .atom-holder { user-select: none; -webkit-user-select: none; }

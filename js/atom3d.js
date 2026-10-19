@@ -24,7 +24,8 @@ holder.appendChild(canvas);
 const slice = document.createElement("div");
 slice.className = "atom-slice";
 slice.innerHTML =
-  '<div class="as-head"><span class="as-title">剖面</span><span class="as-read">全部</span></div>' +
+  '<div class="as-head"><span class="as-title">剖面</span>' +
+    '<span class="as-tip">滚轮剖开 · 拖动也行</span><span class="as-read">全部</span></div>' +
   '<div class="as-rail" role="slider" tabindex="0" aria-label="剖开电子层" ' +
     'aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">' +
     '<div class="as-track"></div><div class="as-fill"></div><div class="as-ticks"></div>' +
@@ -203,6 +204,21 @@ sliceRail.addEventListener("keydown", function (e) {
   if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPeel(peelTarget + 1, true); e.preventDefault(); }
   if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPeel(peelTarget - 1, true); e.preventDefault(); }
 });
+
+/* 滚轮：在原子上面向上滚 = 剖开一层，向下 = 收回去；到头就把滚动还给页面 */
+let wheelAcc = 0, wheelLock = 0;
+canvas.addEventListener("wheel", function (e) {
+  const up = e.deltaY < 0;
+  if ((up && peelTarget >= ringCount) || (!up && peelTarget <= 0)) return;
+  e.preventDefault();
+  wheelAcc += e.deltaY;
+  const now = performance.now();
+  if (Math.abs(wheelAcc) >= 50 && now > wheelLock) {
+    wheelLock = now + 140;
+    wheelAcc = 0;
+    setPeel(peelTarget + (up ? 1 : -1), true);
+  }
+}, { passive: false });
 
 
 function clearAtom() {
