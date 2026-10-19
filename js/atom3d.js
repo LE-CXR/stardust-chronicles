@@ -25,8 +25,8 @@ const slice = document.createElement("div");
 slice.className = "atom-slice";
 slice.innerHTML =
   '<div class="as-head"><span class="as-title">剖面</span>' +
-    '<span class="as-tip">滚轮剖开 · 拖动也行</span><span class="as-read">全部</span></div>' +
-  '<div class="as-rail" role="slider" tabindex="0" aria-label="剖开电子层" ' +
+    '<span class="as-tip">滚轮缩放 · 拖动也行</span><span class="as-read">10⁻¹⁰ m</span></div>' +
+  '<div class="as-rail" role="slider" tabindex="0" aria-label="原子尺度" ' +
     'aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">' +
     '<div class="as-track"></div><div class="as-fill"></div><div class="as-ticks"></div>' +
     '<div class="as-knob"></div>' +
@@ -37,6 +37,7 @@ const sliceFill = slice.querySelector(".as-fill");
 const sliceKnob = slice.querySelector(".as-knob");
 const sliceRead = slice.querySelector(".as-read");
 const sliceTicks = slice.querySelector(".as-ticks");
+const sliceTitle = slice.querySelector(".as-title");
 const badge = document.createElement("span");
 badge.className = "atom-badge";
 badge.textContent = "点击展开";
@@ -100,10 +101,11 @@ const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
 let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0, dragMoved = 0;
 let focusT0 = 0, focusHalo = null, lastCounts = null, renderOn = true, renders = 0;
-let nucInst = null, nucBase = null, nucPhase = null, nucScale = 0.3, jitterFrame = 0;
+let nucInst = null, nucBase = null, nucPhase = null, nucScale = 0.3, jitterFrame = 0, nucCore = null;
 const jDummy = new THREE.Object3D();
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 let peelTarget = 0, peelCur = 0, ringCount = 0, sliceDrag = false, lastTick = 0;
+let zoom = 0, zoomTarget = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 16, 12);
 const ringGeo = new THREE.TorusGeometry(1, 0.009, 8, 128);
@@ -153,37 +155,155 @@ const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
 }));
 scene.add(dust);
 
-/* ---------- 剖面：拖动剥掉外层，松手吸附到整层 ---------- */
-function paintSlice() {
-  if (!ringCount) return;
-  const ratio = Math.max(0, Math.min(1, peelTarget / ringCount));
-  sliceFill.style.left = "6px";
-  sliceFill.style.width = "calc((100% - 12px) * " + ratio + ")";
-  sliceKnob.style.left = "calc(6px + (100% - 12px) * " + ratio + ")";
-  sliceRail.setAttribute("aria-valuemax", String(ringCount));
-  sliceRail.setAttribute("aria-valuenow", String(Math.round(peelTarget)));
-  const k = Math.round(peelTarget);
-  sliceRead.textContent = k <= 0 ? "全部" : (k >= ringCount ? "只剩核" : "已剖开 " + k + " 层");
+/* ---------- 核子 / 夸克层：质子 = uud（示意，不主张内部尺寸） ---------- */
+function makeLabel(text, color) {
+  const c = document.createElement("canvas");
+  c.width = 128; c.height = 64;
+  const g = c.getContext("2d");
+  g.font = "600 42px 'Segoe UI', 'Microsoft YaHei', sans-serif";
+  g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillStyle = color;
+  g.shadowColor = color; g.shadowBlur = 12;
+  g.fillText(text, 64, 34);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, opacity: 0 }));
+  s.scale.set(0.62, 0.31, 1);
+  return s;
 }
 
-function setPeel(v, snap) {
-  peelTarget = Math.max(0, Math.min(ringCount, snap ? Math.round(v) : v));
+const quarkGroup = new THREE.Group();
+quarkGroup.visible = false;
+atom.add(quarkGroup);
+const nucShellMat = new THREE.MeshBasicMaterial({
+  color: 0xe4c27a, transparent: true, opacity: 0.06,
+  depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+});
+const nucWireMat = new THREE.MeshBasicMaterial({
+  color: 0xe4c27a, wireframe: true, transparent: true, opacity: 0.05, depthWrite: false,
+});
+const nucleonBall = new THREE.Mesh(new THREE.SphereGeometry(1.58, 40, 28), nucShellMat);
+quarkGroup.add(nucleonBall);
+quarkGroup.add(new THREE.Mesh(new THREE.SphereGeometry(1.585, 24, 16), nucWireMat));
+
+const QUARKS = [
+  { base: new THREE.Vector3(0.62, 0.3, 0.1), label: "u", hex: "#ff8a7a", col: 0xff6b5a },
+  { base: new THREE.Vector3(-0.44, 0.5, -0.16), label: "u", hex: "#8fe0b0", col: 0x6bd39a },
+  { base: new THREE.Vector3(-0.2, -0.64, 0.24), label: "d", hex: "#8fb4ff", col: 0x6b9cff },
+];
+const quarkMeshes = [];
+const quarkLabels = [];
+const quarkGlows = [];
+QUARKS.forEach(function (q) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.17, 18, 14), new THREE.MeshBasicMaterial({ color: q.col, transparent: true, opacity: 0 }));
+  quarkGroup.add(m);
+  quarkMeshes.push(m);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: dotTex, color: q.col, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  }));
+  glow.scale.set(1.5, 1.5, 1);
+  quarkGroup.add(glow);
+  quarkGlows.push(glow);
+  const lab = makeLabel(q.label, q.hex);
+  quarkGroup.add(lab);
+  quarkLabels.push(lab);
+});
+
+/* 胶子弹簧：三个夸克两两相连，线在动 */
+const springs = [];
+[[0, 1], [1, 2], [2, 0]].forEach(function (pair) {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(18 * 3), 3));
+  const mat = new THREE.LineBasicMaterial({
+    color: 0xe4c27a, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const line = new THREE.Line(geo, mat);
+  quarkGroup.add(line);
+  springs.push({ line, geo, mat, a: pair[0], b: pair[1] });
+});
+
+/* ---------- 缩小端的“物质”：几颗邻近原子的抽象轮廓 ---------- */
+const matter = new THREE.Group();
+const matterMats = [];
+for (let i = 0; i < 6; i++) {
+  const a = (i / 6) * Math.PI * 2 + 0.4;
+  const g = new THREE.Group();
+  const shellMat = new THREE.MeshBasicMaterial({
+    color: 0x9fc0de, wireframe: true, transparent: true, opacity: 0, depthWrite: false });
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xc9a86a, transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending });
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(6.4, 14, 10), shellMat));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(9.4, 0.05, 6, 80), ringMat);
+  ring.rotation.set(0.9 + i * 0.12, i * 0.5, 0.3);
+  g.add(ring);
+  g.position.set(Math.cos(a) * 52, (i % 3 - 1) * 9, Math.sin(a) * 52);
+  g.rotation.y = -a;
+  matter.add(g);
+  matterMats.push([shellMat, ringMat]);
+}
+matter.visible = false;
+atom.add(matter);
+
+/* ---------- 尺度梯：0=原子 0.5=原子核 0.625=质子 1=夸克 ---------- */
+const SUP = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+const STAGE_TICKS = [0, 0.5, 0.625, 1];
+const ZMIN = -0.2, ZMAX = 1;
+
+function supNum(n) {
+  return String(n).split("").map(function (d) { return SUP[+d] || d; }).join("");
+}
+function expOf(z) { return 10 + z * 8; }            /* 1e-10 m → 1e-18 m */
+function stageName(z) {
+  if (z < -0.02) return "物质";
+  return z < 0.42 ? "原子" : z < 0.58 ? "原子核" : z < 0.82 ? "质子" : "夸克";
+}
+
+function railRatio(z) { return (z - ZMIN) / (ZMAX - ZMIN); }
+function railZoom(r) { return ZMIN + r * (ZMAX - ZMIN); }
+
+function paintSlice() {
+  const z = Math.max(ZMIN, Math.min(ZMAX, zoomTarget));
+  const r = railRatio(z);
+  sliceFill.style.left = "6px";
+  sliceFill.style.width = "calc((100% - 12px) * " + r + ")";
+  sliceKnob.style.left = "calc(6px + (100% - 12px) * " + r + ")";
+  sliceRail.setAttribute("aria-valuemin", "0");
+  sliceRail.setAttribute("aria-valuemax", "100");
+  sliceRail.setAttribute("aria-valuenow", String(Math.round(r * 100)));
+  sliceTitle.textContent = stageName(z);
+  sliceRead.textContent = "10" + supNum(Math.round(expOf(z))) + " m";
+}
+
+function setZoom(v, snap) {
+  zoomTarget = Math.max(ZMIN, Math.min(ZMAX, snap ? Math.round(v * 100) / 100 : v));
+  /* 外壳随放大自动剥落：到 0.34 时所有电子层都让位给核 */
+  peelTarget = ringCount ? Math.min(ringCount, (zoomTarget / 0.34) * ringCount) : 0;
   paintSlice();
 }
 
 function buildSliceTicks() {
   sliceTicks.innerHTML = "";
-  for (let i = 0; i < ringCount; i++) {
+  [ZMIN].concat(STAGE_TICKS).forEach(function (z) {
     const t = document.createElement("i");
-    t.style.left = (((ringCount - i) / ringCount) * 100) + "%";
+    t.style.left = (railRatio(z) * 100) + "%";
     sliceTicks.appendChild(t);
-  }
+  });
 }
 
 function railValue(e) {
   const r = sliceRail.getBoundingClientRect();
   const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-  setPeel(ratio * ringCount, false);
+  setZoom(railZoom(ratio), false);
+}
+
+/* 尺度 → 相机距离：0.48 之后镜头贴在核上，再往前推进到夸克 */
+function camFor(z) {
+  if (z < 0) return baseZ * (1 + 2.2 * (-z / 0.2));
+  if (z <= 0.48) return baseZ * (1 - 0.78 * (z / 0.48));
+  return baseZ * (0.22 - 0.105 * ((z - 0.48) / 0.52));
 }
 
 sliceRail.addEventListener("pointerdown", function (e) {
@@ -197,26 +317,26 @@ sliceRail.addEventListener("pointermove", function (e) { if (sliceDrag) railValu
   sliceRail.addEventListener(ev, function () {
     if (!sliceDrag) return;
     sliceDrag = false;
-    setPeel(peelTarget, true);
+    setZoom(zoomTarget, false);
   });
 });
 sliceRail.addEventListener("keydown", function (e) {
-  if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPeel(peelTarget + 1, true); e.preventDefault(); }
-  if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPeel(peelTarget - 1, true); e.preventDefault(); }
+  if (e.key === "ArrowRight" || e.key === "ArrowUp") { setZoom(zoomTarget + 0.05, false); e.preventDefault(); }
+  if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setZoom(zoomTarget - 0.05, false); e.preventDefault(); }
 });
 
-/* 滚轮：在原子上面向上滚 = 剖开一层，向下 = 收回去；到头就把滚动还给页面 */
+/* 滚轮：在原子上面向上滚 = 放大，向下 = 缩小；到头就把滚动还给页面 */
 let wheelAcc = 0, wheelLock = 0;
 canvas.addEventListener("wheel", function (e) {
   const up = e.deltaY < 0;
-  if ((up && peelTarget >= ringCount) || (!up && peelTarget <= 0)) return;
+  if ((up && zoomTarget >= ZMAX) || (!up && zoomTarget <= ZMIN)) return;
   e.preventDefault();
   wheelAcc += e.deltaY;
   const now = performance.now();
   if (Math.abs(wheelAcc) >= 50 && now > wheelLock) {
     wheelLock = now + 140;
     wheelAcc = 0;
-    setPeel(peelTarget + (up ? 1 : -1), true);
+    setZoom(zoomTarget + (up ? 0.055 : -0.055), false);
   }
 }, { passive: false });
 
@@ -224,6 +344,7 @@ canvas.addEventListener("wheel", function (e) {
 function clearAtom() {
   for (let i = atom.children.length - 1; i >= 0; i--) {
     const c = atom.children[i];
+    if (c === quarkGroup || c === matter) continue;   /* 跨元素复用，不能清掉 */
     atom.remove(c);
     c.traverse && c.traverse((n) => {
       if (n.geometry && n.geometry !== sphereGeo && n.geometry !== ringGeo &&
@@ -263,6 +384,7 @@ function build(z) {
   // 原子核：发光芯 + 一小圈暖 halo。halo 必须比 K 层小，否则最内层电子会被洗掉
   const core = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.3 }));
   core.scale.setScalar(0.55);
+  nucCore = core;
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd7a0, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
   halo.scale.set(6.2, 6.2, 1);
   nuc.add(halo);
@@ -315,7 +437,9 @@ function build(z) {
   // 电子层：第 i 层一个环，电子沿环均匀排布并绕行
   const shells = el.shells || [];
   ringCount = shells.length;
-  peelTarget = 0; peelCur = 0;
+  /* 换元素时保留当前尺度：正在看夸克就继续看夸克 */
+  peelTarget = ringCount ? Math.min(ringCount, (zoom / 0.34) * ringCount) : 0;
+  peelCur = peelTarget;
   buildSliceTicks();
   paintSlice();
   const R0 = 6.6, DR = 2.35;   /* K 层必须落在核与 halo 之外，否则第一层看不见 */
@@ -450,6 +574,7 @@ function tick() {
   tiltY += (aimY - tiltY) * 0.06;
   atom.rotation.x = -0.18 + tiltX + userX;
   peelCur += (peelTarget - peelCur) * Math.min(1, dt * 9);
+  zoom += (zoomTarget - zoom) * Math.min(1, dt * 8);
   if (focused) {
     const k = Math.min(1, Math.max(0, (now - focusT0) / 900));
     const e = 1 - Math.pow(1 - k, 3);
@@ -458,9 +583,8 @@ function tick() {
     camera.lookAt(0, 0, 0);
     if (focusHalo) focusHalo.material.opacity = 0.58 + 0.16 * Math.sin(now * 0.0016);
   } else {
-    /* 剖得越深，镜头越靠近：看 K 层时核是主角 */
-    const zoom = 1 - 0.3 * (ringCount ? Math.min(1, peelCur / ringCount) : 0);
-    camera.position.z += (baseZ * zoom - camera.position.z) * Math.min(1, dt * 5);
+    /* 越往里尺度越小，镜头一路推进到核子内部 */
+    camera.position.z += (camFor(zoom) - camera.position.z) * Math.min(1, dt * 6);
   }
   atom.rotation.y += 0.0032;
   atom.rotation.y += 0;
@@ -494,6 +618,64 @@ function tick() {
       m.opacity += (((lit ? base : base * 0.35) * vis) - m.opacity) * 0.2;
     });
     r.eMat.size = highlight === i ? 2.9 + 0.35 * Math.sin(now * 0.005) : 2.2;
+  }
+  /* ---------- 尺度过渡：原子 → 核 → 核子 → 夸克 ---------- */
+  const band = function (a, b) { return Math.min(1, Math.max(0, (zoom - a) / (b - a))); };
+  const nucA = 1 - band(0.46, 0.6);
+  const nucA2 = band(0.46, 0.6);
+  const qA = band(0.58, 0.85);
+  const labelA = band(0.52, 0.68);
+  if (nucleus) {
+    nucleus.visible = nucA > 0.02;
+    if (nucInst) nucInst.material.opacity = 0.95 * nucA;
+    if (nucCore) nucCore.material.opacity = 0.3 * nucA;
+    if (focusHalo && !focused) focusHalo.material.opacity = 0.55 * nucA;
+  }
+  if (quarkGroup) {
+    quarkGroup.visible = nucA2 > 0.02;
+    quarkGroup.scale.setScalar(1 + qA * 0.16);
+    if (quarkGroup.visible) {
+      nucShellMat.opacity = 0.07 * nucA2 * (1 - 0.7 * qA);
+      nucWireMat.opacity = 0.05 * nucA2 * (1 - 0.55 * qA);
+      const t = now * 0.001;
+      QUARKS.forEach(function (q, i) {
+        const m = quarkMeshes[i];
+        m.position.set(
+          q.base.x + Math.sin(t * 1.3 + i * 2.1) * 0.055,
+          q.base.y + Math.cos(t * 1.1 + i * 1.7) * 0.055,
+          q.base.z + Math.sin(t * 0.9 + i * 2.7) * 0.055);
+        m.material.opacity = nucA2 * (0.5 + 0.5 * labelA);
+        quarkGlows[i].position.copy(m.position);
+        quarkGlows[i].material.opacity = nucA2 * (0.15 + 0.45 * labelA);
+        quarkLabels[i].position.set(m.position.x, m.position.y + 0.33, m.position.z);
+        quarkLabels[i].material.opacity = labelA * 0.95;
+      });
+      springs.forEach(function (sp) {
+        const a = quarkMeshes[sp.a].position, b = quarkMeshes[sp.b].position;
+        const pos = sp.geo.attributes.position.array;
+        const N = 18;
+        for (let k = 0; k < N; k++) {
+          const f = k / (N - 1);
+          const wob = Math.sin(f * Math.PI * 3 + t * 5 + sp.a) * 0.055 * Math.sin(f * Math.PI);
+          pos[k * 3] = a.x + (b.x - a.x) * f;
+          pos[k * 3 + 1] = a.y + (b.y - a.y) * f + wob;
+          pos[k * 3 + 2] = a.z + (b.z - a.z) * f + wob * 0.5;
+        }
+        sp.geo.attributes.position.needsUpdate = true;
+        sp.mat.opacity = 0.3 * nucA2 * (0.35 + 0.65 * qA);
+      });
+    }
+  }
+  /* 缩到原子以外时，露出几颗邻近原子的淡轮廓 */
+  if (matter) {
+    const mA = Math.min(1, Math.max(0, (0 - zoom) / 0.14));
+    matter.visible = mA > 0.01;
+    if (matter.visible) {
+      matterMats.forEach(function (pair) {
+        pair[0].opacity = 0.1 * mA;
+        pair[1].opacity = 0.16 * mA;
+      });
+    }
   }
   if (dust) {
     dust.rotation.y += 0.00045;
@@ -556,7 +738,7 @@ function mount() {
     li.addEventListener("pointerleave", function () { highlight = -1; });
     /* 点某一层 = 把外面的壳全剖掉，只留到这一层 */
     li.addEventListener("click", function () {
-      setPeel(rings.length - 1 - i, true);
+      setZoom(((rings.length - 1 - i) / rings.length) * 0.34, false);
       highlight = i;
     });
   });
@@ -660,10 +842,12 @@ window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
     nuc: nucleus ? nucleus.scale.x : -1, conn: canvas.isConnected,
     hidden: document.hidden, z: built, frames: frames, renders: renders, counts: lastCounts,
+    zoom: +zoom.toFixed(3), zoomTarget: zoomTarget,
     peel: peelTarget, peelCur: +peelCur.toFixed(3),
     hides: rings.map(function (r) { return +r.hide.toFixed(3); }),
     visible: rings.map(function (r) { return r.ring.visible; }) };
 };
+window.__atomZoom = function (v) { setZoom(v, false); };
 window.__atomJitter = function () {
   return nucInst ? { x: +nucInst.instanceMatrix.array[12].toFixed(4), n: nucInst.count } : null;
 };
