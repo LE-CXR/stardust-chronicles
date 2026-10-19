@@ -102,7 +102,7 @@ let focusT0 = 0, focusHalo = null, lastCounts = null, renderOn = true, renders =
 let nucInst = null, nucBase = null, nucPhase = null, nucScale = 0.3, jitterFrame = 0;
 const jDummy = new THREE.Object3D();
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
-let peelTarget = 0, peelCur = 0, ringCount = 0, sliceDrag = false;
+let peelTarget = 0, peelCur = 0, ringCount = 0, sliceDrag = false, lastTick = 0;
 
 const sphereGeo = new THREE.SphereGeometry(1, 16, 12);
 const ringGeo = new THREE.TorusGeometry(1, 0.009, 8, 128);
@@ -418,6 +418,9 @@ function tick() {
   if (!canvas.isConnected) return;
   if (document.hidden) return;
   const now = performance.now();
+  /* 按时间收敛，低帧率设备上剖层也不会拖泥带水 */
+  const dt = lastTick ? Math.min(0.05, (now - lastTick) / 1000) : 0.016;
+  lastTick = now;
   if (++frames % 20 === 0) {
     if (canvas.clientWidth && canvas.clientWidth !== lastW) { lastW = canvas.clientWidth; sizeToBox(); }
     /* 影片盖着、或原子滚出视野时停渲染；rAF 继续排队，回来立刻恢复 */
@@ -430,7 +433,7 @@ function tick() {
   tiltX += (aimX - tiltX) * 0.06;
   tiltY += (aimY - tiltY) * 0.06;
   atom.rotation.x = -0.18 + tiltX + userX;
-  peelCur += (peelTarget - peelCur) * 0.16;
+  peelCur += (peelTarget - peelCur) * Math.min(1, dt * 9);
   if (focused) {
     const k = Math.min(1, Math.max(0, (now - focusT0) / 900));
     const e = 1 - Math.pow(1 - k, 3);
@@ -441,7 +444,7 @@ function tick() {
   } else {
     /* 剖得越深，镜头越靠近：看 K 层时核是主角 */
     const zoom = 1 - 0.3 * (ringCount ? Math.min(1, peelCur / ringCount) : 0);
-    camera.position.z += (baseZ * zoom - camera.position.z) * 0.06;
+    camera.position.z += (baseZ * zoom - camera.position.z) * Math.min(1, dt * 5);
   }
   atom.rotation.y += 0.0032;
   atom.rotation.y += 0;
@@ -456,7 +459,7 @@ function tick() {
     const e = 1 - Math.pow(1 - k, 3);
     /* 第 i 层在 peel 超过 (n-1-i) 时开始剥落；外扩 + 淡出，像掀掉一层玻璃 */
     const hideT = Math.max(0, Math.min(1, peelCur - (rings.length - 1 - i)));
-    r.hide += (hideT - r.hide) * 0.18;
+    r.hide += (hideT - r.hide) * Math.min(1, dt * 11);
     const vis = 1 - r.hide;
     r.ring.visible = vis > 0.012;
     r.ring.scale.setScalar((0.001 + 0.999 * e) * (1 + r.hide * 0.26));
@@ -641,7 +644,9 @@ window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
     nuc: nucleus ? nucleus.scale.x : -1, conn: canvas.isConnected,
     hidden: document.hidden, z: built, frames: frames, renders: renders, counts: lastCounts,
-    peel: peelTarget, visible: rings.map(function (r) { return r.ring.visible; }) };
+    peel: peelTarget, peelCur: +peelCur.toFixed(3),
+    hides: rings.map(function (r) { return +r.hide.toFixed(3); }),
+    visible: rings.map(function (r) { return r.ring.visible; }) };
 };
 window.__atomJitter = function () {
   return nucInst ? { x: +nucInst.instanceMatrix.array[12].toFixed(4), n: nucInst.count } : null;
