@@ -66,8 +66,18 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 300);
 camera.position.set(0, 0, 40);
 
+/* 核子要有体积感就得吃光：一盏暖主光 + 一盏冷轮廓光 + 环境补光 */
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const keyLight = new THREE.DirectionalLight(0xffe4bd, 2.1);
+keyLight.position.set(7, 9, 11);
+scene.add(keyLight);
+const rimLight = new THREE.DirectionalLight(0x7fa9d8, 1.5);
+rimLight.position.set(-9, -5, -9);
+scene.add(rimLight);
+
 const atom = new THREE.Group();
 scene.add(atom);
+
 const rings = [];
 let nucleus = null, nucT0 = 0, highlight = -1;
 let baseZ = 40, focused = false, userX = 0, dragging = false, lastX = 0, lastY = 0;
@@ -76,8 +86,9 @@ let nucInst = null, nucBase = null, nucPhase = null, nucScale = 0.3, jitterFrame
 const jDummy = new THREE.Object3D();
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
 
-const sphereGeo = new THREE.SphereGeometry(1, 12, 10);
-const ringGeo = new THREE.TorusGeometry(1, 0.012, 6, 96);
+const sphereGeo = new THREE.SphereGeometry(1, 16, 12);
+const ringGeo = new THREE.TorusGeometry(1, 0.009, 8, 128);
+const ringGlowGeo = new THREE.TorusGeometry(1, 0.055, 8, 96);
 const coreGeo = new THREE.IcosahedronGeometry(1, 2);
 const dotCanvas = document.createElement("canvas");
 dotCanvas.width = dotCanvas.height = 64;
@@ -98,13 +109,39 @@ grd.addColorStop(1, "rgba(216,165,90,0)");
 g2.fillStyle = grd; g2.fillRect(0, 0, 128, 128);
 const glowTex = new THREE.CanvasTexture(glowCanvas);
 
+/* 远处的尘埃：给三维空间一点尺度感，不抢主体（要等 dotTex 定义之后再建） */
+const dustGeo = new THREE.BufferGeometry();
+const DUST = 120;
+const dustPos = new Float32Array(DUST * 3);
+(function seedDust() {
+  let s = 20261019;
+  const rnd = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+  for (let i = 0; i < DUST; i++) {
+    const th = rnd() * Math.PI * 2, ph = Math.acos(2 * rnd() - 1);
+    const r = 11 + rnd() * 13;
+    dustPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+    dustPos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th) * 0.7;
+    dustPos[i * 3 + 2] = r * Math.cos(ph);
+  }
+})();
+dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+  color: 0x9fc0de, size: 0.55, map: dotTex, transparent: true, opacity: 0.3,
+  depthWrite: false, sizeAttenuation: true,
+}));
+scene.add(dust);
+
 
 function clearAtom() {
   for (let i = atom.children.length - 1; i >= 0; i--) {
     const c = atom.children[i];
     atom.remove(c);
     c.traverse && c.traverse((n) => {
-      if (n.geometry && n.geometry !== sphereGeo && n.geometry !== ringGeo && n.geometry !== coreGeo) n.geometry.dispose();
+      if (n.geometry && n.geometry !== sphereGeo && n.geometry !== ringGeo &&
+          n.geometry !== ringGlowGeo && n.geometry !== coreGeo) n.geometry.dispose();
       if (n.material) n.material.dispose();
     });
   }
@@ -137,11 +174,11 @@ function build(z) {
   nucleus = nuc; nucT0 = performance.now();
   nuc.scale.setScalar(0.001);
 
-  // 原子核：一个发光芯，外面裹着若干核子（按序数缩放，最多 48 颗）
-  const core = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: BRASS, transparent: true, opacity: 0.4 }));
-  core.scale.setScalar(0.6);
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending }));
-  halo.scale.set(13, 13, 1);
+  // 原子核：发光芯 + 一小圈暖 halo。halo 必须比 K 层小，否则最内层电子会被洗掉
+  const core = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.3 }));
+  core.scale.setScalar(0.55);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd7a0, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  halo.scale.set(6.2, 6.2, 1);
   nuc.add(halo);
   focusHalo = halo;
   nuc.add(core);
@@ -155,7 +192,7 @@ function build(z) {
     return ((t ^ t >>> 14) >>> 0) / 4294967296; }; })(z * 7919);
   const nucR = Math.min(5.0, Math.max(1.0, 3.2 * Math.cbrt(total / 56)));
   const inst = new THREE.InstancedMesh(sphereGeo,
-    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.92 }), total);
+    new THREE.MeshStandardMaterial({ roughness: 0.38, metalness: 0.22 }), total);
   const dummy = new THREE.Object3D();
   const dummyPositions = new Float32Array(total * 3);
   const cProton = new THREE.Color(BRASS), cNeutron = new THREE.Color(0x9fb0c0),
@@ -191,23 +228,34 @@ function build(z) {
 
   // 电子层：第 i 层一个环，电子沿环均匀排布并绕行
   const shells = el.shells || [];
+  const R0 = 6.6, DR = 2.35;   /* K 层必须落在核与 halo 之外，否则第一层看不见 */
   shells.forEach((count, i) => {
-    const radius = 5.2 + i * 2.5;
+    const radius = R0 + i * DR;
     const ring = new THREE.Group();
-    const bx = 1.25 - i * 0.3, by = i * 0.8, bz = i * 0.4;
+    const bx = 1.22 - i * 0.27, by = i * 0.72, bz = i * 0.38;
     ring.rotation.set(bx, by, bz);
     ring.scale.setScalar(0.001);
     atom.add(ring);
 
-    const lineMat = new THREE.MeshBasicMaterial({ color: RING, transparent: true, opacity: 0.46 });
+    /* 轨道：一条清晰细环 + 一圈很淡的辉光，叠出“发光轨道”的层次 */
+    const lineMat = new THREE.MeshBasicMaterial({
+      color: 0xc9a86a, transparent: true, opacity: 0.52,
+      blending: THREE.AdditiveBlending, depthWrite: false });
     const line = new THREE.Mesh(ringGeo, lineMat);
     line.scale.set(radius, radius, 1);
     ring.add(line);
 
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xb08d4f, transparent: true, opacity: 0.1,
+      blending: THREE.AdditiveBlending, depthWrite: false });
+    const glowRing = new THREE.Mesh(ringGlowGeo, glowMat);
+    glowRing.scale.set(radius, radius, 1);
+    ring.add(glowRing);
+
     const spin = new THREE.Group();
     ring.add(spin);
 
-    // 电子：按该层真实电子数排布，用光点渲染
+    // 电子：按该层真实电子数排布
     const n = Math.max(1, count);
     const epos = new Float32Array(n * 3);
     for (let k = 0; k < n; k++) {
@@ -218,10 +266,31 @@ function build(z) {
     }
     const eGeo = new THREE.BufferGeometry();
     eGeo.setAttribute("position", new THREE.BufferAttribute(epos, 3));
+
     const eMat = new THREE.PointsMaterial({
-      color: 0x3f6f96, size: 2.6, map: dotTex, transparent: true, opacity: 0.95,
+      color: 0xe6f4ff, size: 2.0, map: dotTex, transparent: true, opacity: 0.95,
       depthWrite: false, sizeAttenuation: true });
     spin.add(new THREE.Points(eGeo, eMat));
+
+    /* 两圈叠加的辉光让电子像有体积的小光球 */
+    const eGlowMat = new THREE.PointsMaterial({
+      color: 0x5f9fd6, size: 5.0, map: dotTex, transparent: true, opacity: 0.32,
+      depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+    spin.add(new THREE.Points(eGeo, eGlowMat));
+
+    /* 拖尾：同一组点滞后一点角度，形成很轻的彗尾 */
+    const tails = [];
+    [0.085, 0.17].forEach((lag, ti) => {
+      const g = new THREE.Group();
+      g.rotation.z = -lag;
+      const m = new THREE.PointsMaterial({
+        color: 0x4f8cc4, size: 3.8 - ti * 0.9, map: dotTex, transparent: true,
+        opacity: 0.14 - ti * 0.06, depthWrite: false,
+        blending: THREE.AdditiveBlending, sizeAttenuation: true });
+      g.add(new THREE.Points(eGeo, m));
+      spin.add(g);
+      tails.push(m);
+    });
 
     // 电子云：轨道附近的概率薄雾（示意，不额外声明数值）
     const cn = Math.min(180, 48 + count * 5);
@@ -243,12 +312,20 @@ function build(z) {
       depthWrite: false, sizeAttenuation: true });
     spin.add(new THREE.Points(cGeo, cMat));
 
-    rings.push({ ring, spin, lineMat, eMat, cMat, speed: 0.5 / Math.sqrt(radius) * (i % 2 ? -1 : 1),
+    rings.push({ ring, spin, lineMat, glowMat, eMat, eGlowMat, cMat, tails,
+      speed: 0.52 / Math.sqrt(radius) * (i % 2 ? -1 : 1),
       t0: performance.now() + i * 70, bx, by, bz });
   });
 
-  const outer = 5.2 + Math.max(0, shells.length - 1) * 2.5 + 1.6;
-  baseZ = outer / Math.tan(Math.PI * 19 / 180) * 1.05;
+  const outer = R0 + Math.max(0, shells.length - 1) * DR + 2.2;
+  /* 自检用：最内层半径必须大于核 + halo，否则 K 层会被核光淹没 */
+  window.__atomInfo = {
+    z: el.z, shells: shells.slice(),
+    radii: shells.map((_, i) => R0 + i * DR),
+    nucleusMax: nucR + (total <= 4 ? 0.42 : 0.34),
+    haloRadius: 3.1,
+  };
+  baseZ = outer / Math.tan(Math.PI * 19 / 180) * 0.96;
   camera.position.z = baseZ * (focused ? 0.72 : 1);
   camera.lookAt(0, 0, 0);
   sizeToBox();
@@ -304,10 +381,20 @@ function tick() {
     r.ring.rotation.z = r.bz;
     r.spin.rotation.z += r.speed * 0.012;
     const lit = highlight === -1 || highlight === i;
-    r.lineMat.opacity += ((lit ? 0.92 : 0.16) - r.lineMat.opacity) * 0.2;
-    r.eMat.opacity += ((lit ? 0.95 : 0.3) - r.eMat.opacity) * 0.2;
+    r.lineMat.opacity += ((lit ? 0.9 : 0.18) - r.lineMat.opacity) * 0.2;
+    r.glowMat.opacity += ((lit ? 0.15 : 0.03) - r.glowMat.opacity) * 0.2;
+    r.eMat.opacity += ((lit ? 0.98 : 0.32) - r.eMat.opacity) * 0.2;
+    r.eGlowMat.opacity += ((lit ? 0.4 : 0.1) - r.eGlowMat.opacity) * 0.2;
     r.cMat.opacity += ((lit ? 0.15 : 0.06) - r.cMat.opacity) * 0.2;
-    r.eMat.size = highlight === i ? 3.4 + 0.45 * Math.sin(now * 0.005) : 2.6;
+    r.tails.forEach((m, ti) => {
+      const base = 0.16 - ti * 0.07;
+      m.opacity += ((lit ? base : base * 0.35) - m.opacity) * 0.2;
+    });
+    r.eMat.size = highlight === i ? 2.9 + 0.35 * Math.sin(now * 0.005) : 2.2;
+  }
+  if (dust) {
+    dust.rotation.y += 0.00045;
+    dust.rotation.x = Math.sin(now * 0.00008) * 0.06;
   }
   if (nucInst && nucBase && ++jitterFrame % 2 === 0) {
     const tt = now * 0.0011;

@@ -281,7 +281,7 @@
     const spectrum = lines.length
       ? `<div class="spectrum" role="img" aria-label="可见发射线示意">${lines
           .map((line, index) => {
-            const left = ((line.nm - 380) / 400) * 100;
+            const left = Math.min(99, Math.max(1, ((line.nm - 380) / 400) * 100));
             const color = wavelengthToRgb(line.nm);
             const h = 30 + Math.round((line.intensity / (lines[0] ? Math.max(...lines.map((item) => item.intensity)) : 1)) * 46);
             return `<i style="left:${left}%;height:${h}%;background:${color};box-shadow:0 0 8px ${color};animation-delay:${index * 55}ms"></i>`;
