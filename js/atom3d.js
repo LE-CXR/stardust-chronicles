@@ -19,6 +19,23 @@ canvas.setAttribute("aria-hidden", "true");
 const holder = document.createElement("div");
 holder.className = "atom-holder";
 holder.appendChild(canvas);
+
+/* 剖面滑轨：拖动剥掉外层电子壳，松手吸附到整层 */
+const slice = document.createElement("div");
+slice.className = "atom-slice";
+slice.innerHTML =
+  '<div class="as-head"><span class="as-title">剖面</span><span class="as-read">全部</span></div>' +
+  '<div class="as-rail" role="slider" tabindex="0" aria-label="剖开电子层" ' +
+    'aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">' +
+    '<div class="as-track"></div><div class="as-fill"></div><div class="as-ticks"></div>' +
+    '<div class="as-knob"></div>' +
+  '</div>';
+holder.appendChild(slice);
+const sliceRail = slice.querySelector(".as-rail");
+const sliceFill = slice.querySelector(".as-fill");
+const sliceKnob = slice.querySelector(".as-knob");
+const sliceRead = slice.querySelector(".as-read");
+const sliceTicks = slice.querySelector(".as-ticks");
 const badge = document.createElement("span");
 badge.className = "atom-badge";
 badge.textContent = "点击展开";
@@ -85,6 +102,7 @@ let focusT0 = 0, focusHalo = null, lastCounts = null, renderOn = true, renders =
 let nucInst = null, nucBase = null, nucPhase = null, nucScale = 0.3, jitterFrame = 0;
 const jDummy = new THREE.Object3D();
 let built = 0, tiltX = 0, tiltY = 0, aimX = 0, aimY = 0, raf = 0, frames = 0, lastW = 0;
+let peelTarget = 0, peelCur = 0, ringCount = 0, sliceDrag = false;
 
 const sphereGeo = new THREE.SphereGeometry(1, 16, 12);
 const ringGeo = new THREE.TorusGeometry(1, 0.009, 8, 128);
@@ -133,6 +151,58 @@ const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
   depthWrite: false, sizeAttenuation: true,
 }));
 scene.add(dust);
+
+/* ---------- 剖面：拖动剥掉外层，松手吸附到整层 ---------- */
+function paintSlice() {
+  if (!ringCount) return;
+  const ratio = Math.max(0, Math.min(1, peelTarget / ringCount));
+  sliceFill.style.left = "6px";
+  sliceFill.style.width = "calc((100% - 12px) * " + ratio + ")";
+  sliceKnob.style.left = "calc(6px + (100% - 12px) * " + ratio + ")";
+  sliceRail.setAttribute("aria-valuemax", String(ringCount));
+  sliceRail.setAttribute("aria-valuenow", String(Math.round(peelTarget)));
+  const k = Math.round(peelTarget);
+  sliceRead.textContent = k <= 0 ? "全部" : (k >= ringCount ? "只剩核" : "已剖开 " + k + " 层");
+}
+
+function setPeel(v, snap) {
+  peelTarget = Math.max(0, Math.min(ringCount, snap ? Math.round(v) : v));
+  paintSlice();
+}
+
+function buildSliceTicks() {
+  sliceTicks.innerHTML = "";
+  for (let i = 0; i < ringCount; i++) {
+    const t = document.createElement("i");
+    t.style.left = (((ringCount - i) / ringCount) * 100) + "%";
+    sliceTicks.appendChild(t);
+  }
+}
+
+function railValue(e) {
+  const r = sliceRail.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  setPeel(ratio * ringCount, false);
+}
+
+sliceRail.addEventListener("pointerdown", function (e) {
+  e.preventDefault();
+  sliceDrag = true;
+  try { sliceRail.setPointerCapture(e.pointerId); } catch (err) {}
+  railValue(e);
+});
+sliceRail.addEventListener("pointermove", function (e) { if (sliceDrag) railValue(e); });
+["pointerup", "pointercancel"].forEach(function (ev) {
+  sliceRail.addEventListener(ev, function () {
+    if (!sliceDrag) return;
+    sliceDrag = false;
+    setPeel(peelTarget, true);
+  });
+});
+sliceRail.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPeel(peelTarget + 1, true); e.preventDefault(); }
+  if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPeel(peelTarget - 1, true); e.preventDefault(); }
+});
 
 
 function clearAtom() {
@@ -228,6 +298,10 @@ function build(z) {
 
   // 电子层：第 i 层一个环，电子沿环均匀排布并绕行
   const shells = el.shells || [];
+  ringCount = shells.length;
+  peelTarget = 0; peelCur = 0;
+  buildSliceTicks();
+  paintSlice();
   const R0 = 6.6, DR = 2.35;   /* K 层必须落在核与 halo 之外，否则第一层看不见 */
   shells.forEach((count, i) => {
     const radius = R0 + i * DR;
@@ -312,7 +386,7 @@ function build(z) {
       depthWrite: false, sizeAttenuation: true });
     spin.add(new THREE.Points(cGeo, cMat));
 
-    rings.push({ ring, spin, lineMat, glowMat, eMat, eGlowMat, cMat, tails,
+    rings.push({ ring, spin, lineMat, glowMat, eMat, eGlowMat, cMat, tails, hide: 0,
       speed: 0.52 / Math.sqrt(radius) * (i % 2 ? -1 : 1),
       t0: performance.now() + i * 70, bx, by, bz });
   });
@@ -356,6 +430,7 @@ function tick() {
   tiltX += (aimX - tiltX) * 0.06;
   tiltY += (aimY - tiltY) * 0.06;
   atom.rotation.x = -0.18 + tiltX + userX;
+  peelCur += (peelTarget - peelCur) * 0.16;
   if (focused) {
     const k = Math.min(1, Math.max(0, (now - focusT0) / 900));
     const e = 1 - Math.pow(1 - k, 3);
@@ -363,6 +438,10 @@ function tick() {
     camera.position.y = 9 * (1 - e);
     camera.lookAt(0, 0, 0);
     if (focusHalo) focusHalo.material.opacity = 0.58 + 0.16 * Math.sin(now * 0.0016);
+  } else {
+    /* 剖得越深，镜头越靠近：看 K 层时核是主角 */
+    const zoom = 1 - 0.3 * (ringCount ? Math.min(1, peelCur / ringCount) : 0);
+    camera.position.z += (baseZ * zoom - camera.position.z) * 0.06;
   }
   atom.rotation.y += 0.0032;
   atom.rotation.y += 0;
@@ -375,20 +454,25 @@ function tick() {
     const r = rings[i];
     const k = Math.min(1, Math.max(0, (now - r.t0) / 430));
     const e = 1 - Math.pow(1 - k, 3);
-    r.ring.scale.setScalar(0.001 + 0.999 * e);
+    /* 第 i 层在 peel 超过 (n-1-i) 时开始剥落；外扩 + 淡出，像掀掉一层玻璃 */
+    const hideT = Math.max(0, Math.min(1, peelCur - (rings.length - 1 - i)));
+    r.hide += (hideT - r.hide) * 0.18;
+    const vis = 1 - r.hide;
+    r.ring.visible = vis > 0.012;
+    r.ring.scale.setScalar((0.001 + 0.999 * e) * (1 + r.hide * 0.26));
     r.ring.rotation.y = r.by + (1 - e) * 1.1;
     r.ring.rotation.x = r.bx + (1 - e) * 0.35;
     r.ring.rotation.z = r.bz;
     r.spin.rotation.z += r.speed * 0.012;
     const lit = highlight === -1 || highlight === i;
-    r.lineMat.opacity += ((lit ? 0.9 : 0.18) - r.lineMat.opacity) * 0.2;
-    r.glowMat.opacity += ((lit ? 0.15 : 0.03) - r.glowMat.opacity) * 0.2;
-    r.eMat.opacity += ((lit ? 0.98 : 0.32) - r.eMat.opacity) * 0.2;
-    r.eGlowMat.opacity += ((lit ? 0.4 : 0.1) - r.eGlowMat.opacity) * 0.2;
-    r.cMat.opacity += ((lit ? 0.15 : 0.06) - r.cMat.opacity) * 0.2;
+    r.lineMat.opacity += (((lit ? 0.9 : 0.18) * vis) - r.lineMat.opacity) * 0.2;
+    r.glowMat.opacity += (((lit ? 0.15 : 0.03) * vis) - r.glowMat.opacity) * 0.2;
+    r.eMat.opacity += (((lit ? 0.98 : 0.32) * vis) - r.eMat.opacity) * 0.2;
+    r.eGlowMat.opacity += (((lit ? 0.4 : 0.1) * vis) - r.eGlowMat.opacity) * 0.2;
+    r.cMat.opacity += (((lit ? 0.15 : 0.06) * vis) - r.cMat.opacity) * 0.2;
     r.tails.forEach((m, ti) => {
       const base = 0.16 - ti * 0.07;
-      m.opacity += ((lit ? base : base * 0.35) - m.opacity) * 0.2;
+      m.opacity += (((lit ? base : base * 0.35) * vis) - m.opacity) * 0.2;
     });
     r.eMat.size = highlight === i ? 2.9 + 0.35 * Math.sin(now * 0.005) : 2.2;
   }
@@ -451,6 +535,11 @@ function mount() {
     li.style.cursor = "pointer";
     li.addEventListener("pointerenter", function () { highlight = i; });
     li.addEventListener("pointerleave", function () { highlight = -1; });
+    /* 点某一层 = 把外面的壳全剖掉，只留到这一层 */
+    li.addEventListener("click", function () {
+      setPeel(rings.length - 1 - i, true);
+      highlight = i;
+    });
   });
 }
 
@@ -551,7 +640,8 @@ addEventListener("blur", endDrag);
 window.__atomDebug = function () {
   return { rings: rings.length, s0: rings[0] ? rings[0].ring.scale.x : -1,
     nuc: nucleus ? nucleus.scale.x : -1, conn: canvas.isConnected,
-    hidden: document.hidden, z: built, frames: frames, renders: renders, counts: lastCounts };
+    hidden: document.hidden, z: built, frames: frames, renders: renders, counts: lastCounts,
+    peel: peelTarget, visible: rings.map(function (r) { return r.ring.visible; }) };
 };
 window.__atomJitter = function () {
   return nucInst ? { x: +nucInst.instanceMatrix.array[12].toFixed(4), n: nucInst.count } : null;
