@@ -295,7 +295,12 @@
             .join("")}</ul>`
       : `<p class="empty">NIST《基础原子光谱数据手册》没有收录这个元素可用的可见强线。这里留空，不补画。</p>`;
     const flame = el.flame
-      ? `<div class="flame"><div class="flame-orb" style="--flame:${el.flame.swatch}"></div><div><strong>${esc(el.flame.color)}</strong><p class="note">${esc(el.flame.note)} 色块只是示意，不是测色值。</p></div></div>`
+      ? `<div class="flame">` +
+          `<div class="flame-slot" style="--flame:${esc(el.flame.swatch)}" data-color="${esc(el.flame.swatch)}"></div>` +
+          `<div class="flame-copy"><strong>${esc(el.flame.color)}</strong>` +
+          `<p class="note">${esc(el.flame.note)}</p>` +
+          `<p class="note flame-fine">火焰形态是程序化示意，颜色取自该元素的定性焰色，不是测色值。</p></div>` +
+        `</div>`
       : `<p class="empty">没有列入可靠的定性焰色。留空不是「火焰一定无色」，而是这份档案不猜测。</p>`;
     const reading = el.reading ? `（${esc(el.reading)}）` : "";
     panel.innerHTML =

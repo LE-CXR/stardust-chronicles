@@ -435,6 +435,9 @@ body.instant .cell.is-focus { animation: emphasis 2.8s ease-in-out infinite; }
   }
 }
 @media (max-width: 1099px) {
+  /* .layout 带着 z-index:1 会变成一个层叠上下文，抽屉的 z-index:30 就被关在里面，
+     后面的章节正文反而压在抽屉上。这里让它回到 auto。 */
+  .layout { z-index: auto; }
   .panel {
     position: fixed;
     left: 0;
@@ -457,6 +460,34 @@ body.instant .cell.is-focus { animation: emphasis 2.8s ease-in-out infinite; }
   }
 }
 .sheet-backdrop[hidden] { display: none; }
+/* 底部抽屉打开时，别再让「悬浮元素能听见光谱」的提示压在档案上 */
+body.sheet-open .listen-hint { display: none; }
+
+/* 平板 / 小笔记本：档案改成右侧抽屉，桌子还能留在视线里 */
+@media (min-width: 760px) and (max-width: 1099px) {
+  .panel {
+    top: 0;
+    left: auto;
+    right: 0;
+    bottom: 0;
+    width: min(440px, 92vw);
+    height: 100dvh;
+    max-height: none;
+    border-radius: 18px 0 0 18px;
+    transform: translateX(105%);
+    box-shadow: -18px 0 60px rgba(0, 0, 0, .35);
+  }
+  body.sheet-open .panel { transform: translateX(0); }
+  body.sheet-open .sheet-backdrop { background: rgba(4, 7, 12, .5); }
+  .panel .handle { display: none; }
+  /* 抽屉是靠右的整块阅读区，纸面表格透过来会糊字 */
+  html.cosmic .panel { background: rgba(11, 15, 22, .96); }
+}
+
+/* 超宽屏：别把 118 格拉到整面墙 */
+@media (min-width: 1600px) {
+  .layout { max-width: 1720px; margin-inline: auto; }
+}
 .handle {
   width: 42px;
   height: 4px;
@@ -605,25 +636,49 @@ body.instant .cell.is-focus { animation: emphasis 2.8s ease-in-out infinite; }
 }
 .lines .mark { width: 0.7rem; height: 0.7rem; border-radius: 99px; display: inline-block; }
 
-.flame {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+.flame { display: grid; gap: 10px; }
+.flame-slot {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  margin-inline: auto;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(80% 90% at 50% 92%, color-mix(in srgb, var(--flame, #c98a4b) 20%, transparent), transparent 72%),
+    radial-gradient(120% 120% at 50% 28%, rgba(10, 14, 20, .94), rgba(5, 8, 13, .97));
+  box-shadow: inset 0 0 44px rgba(0, 0, 0, .5);
 }
-.flame-orb {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  flex: none;
-  box-shadow: 0 0 22px color-mix(in srgb, var(--flame) 55%, transparent);
-  background: radial-gradient(circle at 40% 35%, #fff, var(--flame) 42%, #2a2118 78%);
-  animation: flame 1.7s ease-in-out infinite;
-  transform-origin: center 70%;
+/* file:// 或三维模块没加载时，退回一张静态焰色 */
+.flame-slot:empty::after {
+  content: "";
+  position: absolute;
+  inset: 22% 34% 12%;
+  border-radius: 50% 50% 42% 42% / 66% 66% 34% 34%;
+  background: radial-gradient(circle at 50% 74%, #fff 0 5%, var(--flame, #c98a4b) 44%, transparent 74%);
+  filter: blur(2px);
+  animation: flame 3.4s ease-in-out infinite;
+  transform-origin: center 78%;
 }
+.flame-holder { position: absolute; inset: 0; }
+.flame3d { display: block; width: 100%; height: 100%; cursor: ew-resize; }
+.flame-touch {
+  position: absolute; right: 10px; bottom: 8px;
+  font-size: 9px; letter-spacing: .14em;
+  color: rgba(232, 236, 242, .55);
+  opacity: 0; transition: opacity .25s; pointer-events: none;
+}
+.flame-slot:hover .flame-touch { opacity: 1; }
+.flame-copy strong { display: block; font-size: .95rem; letter-spacing: .06em; margin-bottom: 3px; }
+.flame-copy .note { margin: 3px 0 0; }
+.flame-fine { opacity: .66; }
+@media (prefers-reduced-motion: reduce) { .flame-slot:empty::after { animation: none; } }
 @keyframes flame {
-  0%, 100% { transform: scale(1, 1) translateY(0); }
-  40% { transform: scale(1.05, 1.12) translateY(-2px); }
-  70% { transform: scale(0.97, 0.94) translateY(1px); }
+  0%, 100% { transform: scale(1, 1) translateY(0); opacity: .9; }
+  45% { transform: scale(1.04, 1.1) translateY(-3px); opacity: 1; }
+  72% { transform: scale(.98, .96) translateY(1px); opacity: .86; }
 }
 .empty {
   color: var(--muted);
@@ -1100,6 +1155,7 @@ html.cosmic .rail-prog { background: rgba(255, 255, 255, .12); }
 html.cosmic .story.is-entering .kicker,
 html.cosmic .story .kicker { color: rgba(232, 236, 242, .55); }
 html.cosmic .icon-btn { color: rgba(241, 238, 231, .82); border-color: rgba(255, 255, 255, .22); }
+html.cosmic .toolbar .btn { color: rgba(241, 238, 231, .86); border-color: rgba(255, 255, 255, .22); }
 html.cosmic .icon-btn:hover { color: #fff; background: rgba(255, 255, 255, .08); }
 html.cosmic .story h2 { color: #f1eee7; }
 html.cosmic .story .body { color: rgba(232, 236, 242, .68); }
@@ -1124,6 +1180,10 @@ html.cosmic .chapter-card {
   border: 1px solid rgba(255, 255, 255, .1);
   backdrop-filter: blur(16px) saturate(120%);
   box-shadow: 0 30px 80px rgba(0, 0, 0, .38);
+}
+/* 平板抽屉是整块阅读区，必须压住背后的纸面表格 */
+@media (min-width: 760px) and (max-width: 1099px) {
+  html.cosmic .panel { background: rgba(11, 15, 22, .96); }
 }
 html.cosmic .chapter-card h3,
 html.cosmic .panel h2 { color: #f4f1ea; }

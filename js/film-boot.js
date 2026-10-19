@@ -22,7 +22,7 @@
     for (var i = 0; i < list.length; i++) window.__filmStart && window.__filmStart(list[i]);
   };
   if (!fileMode) {
-    ["js/film.js", "js/atom3d.js"].forEach(function (src) {
+    ["js/film.js", "js/atom3d.js", "js/flame3d.js"].forEach(function (src) {
       var s = document.createElement("script");
       s.type = "module";
       s.src = src;

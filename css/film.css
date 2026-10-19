@@ -173,6 +173,16 @@
   html.cosmic .panel { background: rgba(11, 15, 22, .93); }
 }
 
+/* 手机：搜索框单独占一行，别让它在工具栏右边被切一半 */
+@media (max-width: 560px) {
+  .toolbar { flex-wrap: wrap; overflow: visible; row-gap: 8px; }
+  .toolbar .modes,
+  .toolbar #density { order: 0; }
+  .toolbar .search { flex: 1 1 100%; min-width: 0; order: 2; }
+  .toolbar #replay,
+  .toolbar #audio-open { order: 3; }
+}
+
 /* 影片淡出的同一拍里，档案从下方落位 */
 @keyframes archiveIn {
   from { opacity: 0; transform: translateY(22px); }
@@ -182,6 +192,12 @@ body.archive-in .layout,
 body.archive-in .topbar {
   animation: archiveIn 900ms cubic-bezier(.2,.7,.2,1) both;
 }
+/* .layout 里放着手机上的 fixed 抽屉：祖先一旦有 transform，fixed 会改按它定位，
+   过渡那 900ms 抽屉就会跑到页面中间。所以落位动画只给不包含抽屉的 .stage。 */
+body.archive-in .layout { animation: none; opacity: 1; }
+body.archive-in .stage { animation: archiveIn 900ms cubic-bezier(.2,.7,.2,1) both; }
+/* 不要给 .panel-wrap 加 opacity 动画：Chrome 会为它建层，抽屉的 z-index 就被困在里面，
+   反而被后面的章节正文和遮罩压住。 */
 @media (prefers-reduced-motion: reduce) {
-  body.archive-in .layout, body.archive-in .topbar { animation: none; }
+  body.archive-in .layout, body.archive-in .stage, body.archive-in .topbar { animation: none; }
 }
