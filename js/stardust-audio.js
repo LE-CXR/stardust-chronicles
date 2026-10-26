@@ -1,25 +1,34 @@
 /*
- * stardust-audio.js — 元素的声音（浏览器实时合成，无采样、无外部文件）
+ * stardust-audio.js — 元素的声音
  *
- * 映射规则：把可见光谱整段等比搬进可听频段。
+ * 谱线和弦：把可见光谱整段等比搬进可听频段（浏览器实时合成）。
  *     f(Hz) = 110 * 780 / λ(nm)          780 nm → 110 Hz，380 nm → 225.8 Hz
- * 这是纯等比搬移：谱线之间的音程关系保持真实，没有任何"美化"。
- * 声像按波长展开：长波（红）在左，短波（紫）在右。
- *
- * 已知的诚实边界：钠 D 双线（588.995 / 589.592 nm）相差只有 0.15%，
- * 搬到听觉后是 0.147 Hz 的拍音，人耳听不出来。任何单调映射都改变不了这个相对差，
- * 所以钠听起来就是一个纯音——这正好对应它焰色是标准里最纯的亮黄。
+ * 点选 hit：按 SFX-SPEC 角色锚点播预载 WAV（纸质仪器 / 轻点选）。
+ *     ui.select      → select-click.wav
+ *     ui.select.na   → na-flame-tick.wav（Na；碱金属 Li/K/Rb/Cs 同变体）
+ *     ui.select.au   → au-metal-hit.wav
+ *     ui.select.empty→ og-hollow-tap.wav（无 NIST 可见强线，如 Og）
  *
  * 用法：
  *     const au = new StardustAudio();
- *     au.setSpectra(spectraJson);        // { "Na": [{nm, intensity}, ...], ... }
- *     au.unlock();                       // 必须在一次用户手势里调用（浏览器自动播放策略）
- *     au.playChord("Na");                // 悬浮/点击元素时发声
- *     au.setDuck(true);                  // 旁白说话时压低元素音
+ *     au.setSpectra(spectraJson);
+ *     au.preload();                      // 拉取短 WAV；缺文件静默 + console.warn
+ *     au.unlock();                       // 必须在一次用户手势里调用
+ *     au.playSelect("Na");               // 与金边 rim / 开档同帧
+ *     au.playChord("Na");                // 仅谱线层
  */
 (function (root) {
   "use strict";
   var F_RED = 110, LAM_RED = 780, RATIO = F_RED * LAM_RED;
+  var DEBOUNCE_MS = 80;
+  /* 碱金属（有可见线者）共用 Na 焰色 tick；Fr 无谱线走 empty */
+  var ALKALI_NA_TICK = { Li: 1, Na: 1, K: 1, Rb: 1, Cs: 1 };
+  var SFX_FILES = {
+    "select-click": "select-click.wav",
+    "na-flame-tick": "na-flame-tick.wav",
+    "au-metal-hit": "au-metal-hit.wav",
+    "og-hollow-tap": "og-hollow-tap.wav"
+  };
 
   function pitchOf(nm) { return RATIO / nm; }
 
@@ -69,6 +78,10 @@
     this.opts = opts || {};
     this.ctx = null; this.master = null; this.spectra = {};
     this.voices = []; this.duckGain = 1;
+    this.buffers = {};
+    this._warned = {};
+    this._lastEventAt = {};
+    this._preloadStarted = false;
   }
 
   StardustAudio.prototype.unlock = function () {
@@ -87,6 +100,66 @@
   StardustAudio.prototype.setSpectra = function (s) { this.spectra = s || {}; return this; };
   StardustAudio.prototype.chord = function (symbol) { return chordOf(this.spectra, symbol); };
 
+  /* 预载短 WAV；缺文件静默并 console.warn（禁止空 Audio 假装播放） */
+  StardustAudio.prototype.preload = function () {
+    if (this._preloadStarted) return this;
+    this._preloadStarted = true;
+    var self = this;
+    var base = this.opts.sfxBase || "assets/sfx/";
+    var ctx = this.unlock();
+    if (!ctx) return this;
+    Object.keys(SFX_FILES).forEach(function (key) {
+      var url = base + SFX_FILES[key];
+      fetch(url).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.arrayBuffer();
+      }).then(function (ab) {
+        return self.ctx.decodeAudioData(ab.slice ? ab.slice(0) : ab);
+      }).then(function (buf) {
+        self.buffers[key] = buf;
+      }).catch(function (err) {
+        if (!self._warned[key]) {
+          console.warn("[stardust-audio] missing SFX:", key, url, err && err.message ? err.message : err);
+          self._warned[key] = true;
+        }
+      });
+    });
+    return this;
+  };
+
+  StardustAudio.prototype._debounceOk = function (eventId) {
+    var now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+    var last = this._lastEventAt[eventId] || 0;
+    if (now - last < DEBOUNCE_MS) return false;
+    this._lastEventAt[eventId] = now;
+    return true;
+  };
+
+  /* 播已解码缓冲；缺失则静默返回 null */
+  StardustAudio.prototype.playBuffer = function (key, o) {
+    o = o || {};
+    var ctx = this.unlock();
+    if (!ctx) return null;
+    var buf = this.buffers[key];
+    if (!buf) {
+      if (!this._warned[key]) {
+        console.warn("[stardust-audio] missing SFX:", key);
+        this._warned[key] = true;
+      }
+      return null;
+    }
+    var t0 = ctx.currentTime;
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    var g = ctx.createGain();
+    var peak = o.gain === undefined ? 0.4 : o.gain;
+    g.gain.setValueAtTime(peak * this.duckGain, t0);
+    src.connect(g); g.connect(this.master);
+    src.start(t0);
+    try { src.stop(t0 + buf.duration + 0.02); } catch (e) {}
+    return true;
+  };
+
   StardustAudio.prototype.playChord = function (symbol, o) {
     o = o || {};
     var ctx = this.unlock();
@@ -101,7 +174,57 @@
     return voices.length;
   };
 
-  /* UI 轻点：极短噪声瞬态，与格子高亮同帧，不当成谱线 */
+  /* 点选角色 hit（与视觉同帧）；有谱线时再叠一层和弦 */
+  StardustAudio.prototype.playSelect = function (symbol, o) {
+    o = o || {};
+    var ctx = this.unlock();
+    if (!ctx) return null;
+    this.preload();
+
+    var hasLines = chordOf(this.spectra, symbol).length > 0;
+    var eventId, sampleKey, hitGain, chordGain;
+
+    if (!hasLines) {
+      eventId = "ui.select.empty";
+      sampleKey = "og-hollow-tap";
+      hitGain = o.gain === undefined ? 0.36 : o.gain;
+      chordGain = 0;
+    } else if (symbol === "Au") {
+      eventId = "ui.select.au";
+      sampleKey = "au-metal-hit";
+      hitGain = o.gain === undefined ? 0.46 : o.gain;
+      chordGain = 0.12;
+    } else if (ALKALI_NA_TICK[symbol]) {
+      eventId = "ui.select.na";
+      sampleKey = "na-flame-tick";
+      hitGain = o.gain === undefined ? 0.42 : o.gain;
+      chordGain = 0.14;
+    } else {
+      eventId = "ui.select";
+      sampleKey = "select-click";
+      hitGain = o.gain === undefined ? 0.40 : o.gain;
+      chordGain = 0.24;
+    }
+
+    if (!this._debounceOk(eventId)) return null;
+
+    var played = this.playBuffer(sampleKey, { gain: hitGain });
+    if (!played) {
+      /* 样本缺失：回退到既有 procedural，仍不假装播空文件 */
+      if (sampleKey === "og-hollow-tap") this.playEmpty({ gain: Math.min(0.11, hitGain * 0.3) });
+      else this.playUiClick({ gain: Math.min(0.14, hitGain * 0.35) });
+    }
+
+    if (hasLines && chordGain > 0) {
+      this.playChord(symbol, {
+        dur: o.dur || 3.6,
+        gain: o.chordGain === undefined ? chordGain : o.chordGain
+      });
+    }
+    return eventId;
+  };
+
+  /* UI 轻点：极短噪声瞬态（样本缺失时的回退 / 可选 hover） */
   StardustAudio.prototype.playUiClick = function (o) {
     o = o || {};
     var ctx = this.unlock();
@@ -129,7 +252,7 @@
     return true;
   };
 
-  /* 无可见强线：诚实的空响——低通噪声空心轻叩，不编假音高 */
+  /* 无可见强线：诚实的空响——低通噪声空心轻叩（样本缺失回退） */
   StardustAudio.prototype.playEmpty = function (o) {
     o = o || {};
     var ctx = this.unlock();

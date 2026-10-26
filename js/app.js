@@ -431,7 +431,7 @@
       `<button type="button" class="btn primary" id="close-audio">好</button></div>`;
     dialog.showModal();
     dialog.querySelector("#audition").addEventListener("click", () => {
-      if (window.__playElement) window.__playElement(11);
+      if (window.__playElement) window.__playElement(11, { select: true });
     });
     dialog.querySelector("#close-audio").addEventListener("click", () => dialog.close());
   }
