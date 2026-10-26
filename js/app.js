@@ -1,4 +1,4 @@
-ï»¿/* æ˜Ÿå°˜ç¼–å¹´å² Â· å‘¨æœŸè¡¨ã€æ•…äº‹æ¨¡å¼ã€å…ƒç´ æ¡£æ¡ˆã€‚ */
+/* ĞÇ³¾±àÄêÊ· ¡¤ ÖÜÆÚ±í¡¢¹ÊÊÂÄ£Ê½¡¢ÔªËØµµ°¸¡£ */
 (function () {
   const ELEMENTS = window.STARDUST_ELEMENTS || [];
   const STORY = window.STARDUST_STORY || { chapters: [] };
@@ -6,33 +6,33 @@
   const byZ = new Map(ELEMENTS.map((el) => [el.z, el]));
   const SHELL = ["K", "L", "M", "N", "O", "P", "Q"];
   const CATS = [
-    ["all", "å…¨éƒ¨", "transparent"],
-    ["alkali", "ç¢±é‡‘å±"],
-    ["alkaline", "ç¢±åœŸé‡‘å±"],
-    ["transition", "è¿‡æ¸¡é‡‘å±"],
-    ["post", "è´«é‡‘å±"],
-    ["metalloid", "ç±»é‡‘å±"],
-    ["nonmetal", "éé‡‘å±"],
-    ["halogen", "å¤ç´ "],
-    ["noble", "ç¨€æœ‰æ°”ä½“"],
-    ["lanthanide", "é•§ç³»"],
-    ["actinide", "é”•ç³»"],
+    ["all", "È«²¿", "transparent"],
+    ["alkali", "¼î½ğÊô"],
+    ["alkaline", "¼îÍÁ½ğÊô"],
+    ["transition", "¹ı¶É½ğÊô"],
+    ["post", "Æ¶½ğÊô"],
+    ["metalloid", "Àà½ğÊô"],
+    ["nonmetal", "·Ç½ğÊô"],
+    ["halogen", "Â±ËØ"],
+    ["noble", "Ï¡ÓĞÆøÌå"],
+    ["lanthanide", "ïçÏµ"],
+    ["actinide", "ï¹Ïµ"],
   ];
   const STATUS = {
-    accepted: "å¸¸è§åŸºæ€",
-    calculated: "è®¡ç®—ä¸é—´æ¥å®éªŒæ”¯æŒ",
-    predicted: "ç†è®ºé¢„æµ‹",
+    accepted: "³£¼û»ùÌ¬",
+    calculated: "¼ÆËãÓë¼ä½ÓÊµÑéÖ§³Ö",
+    predicted: "ÀíÂÛÔ¤²â",
   };
   const LINE_NAMES = [
-    { ion: "H I", nm: 656.285, name: "HÎ±" },
-    { ion: "H I", nm: 486.136, name: "HÎ²" },
-    { ion: "H I", nm: 434.046, name: "HÎ³" },
-    { ion: "H I", nm: 410.174, name: "HÎ´" },
-    { ion: "Na I", nm: 588.995, name: "Dâ‚‚" },
-    { ion: "Na I", nm: 589.592, name: "Dâ‚" },
-    { ion: "He I", nm: 587.561, name: "Dâ‚ƒ" },
-    { ion: "Hg I", nm: 435.833, name: "æ±è“çº¿" },
-    { ion: "Hg I", nm: 546.073, name: "æ±ç»¿çº¿" },
+    { ion: "H I", nm: 656.285, name: "H¦Á" },
+    { ion: "H I", nm: 486.136, name: "H¦Â" },
+    { ion: "H I", nm: 434.046, name: "H¦Ã" },
+    { ion: "H I", nm: 410.174, name: "H¦Ä" },
+    { ion: "Na I", nm: 588.995, name: "D?" },
+    { ion: "Na I", nm: 589.592, name: "D?" },
+    { ion: "He I", nm: 587.561, name: "D?" },
+    { ion: "Hg I", nm: 435.833, name: "¹¯À¶Ïß" },
+    { ion: "Hg I", nm: 546.073, name: "¹¯ÂÌÏß" },
   ];
 
   const narrowQuery = window.matchMedia("(max-width: 800px)");
@@ -131,12 +131,12 @@
       bits.push(`<div class="prow" style="grid-row:${p + 1};grid-column:1">${p}</div>`);
     }
     bits.push('<div class="gap" style="grid-row:9;grid-column:1 / span 19"></div>');
-    bits.push('<div class="fmark" style="grid-row:10;grid-column:1" title="é•§ç³»">é•§</div>');
-    bits.push('<div class="fmark" style="grid-row:11;grid-column:1" title="é”•ç³»">é”•</div>');
+    bits.push('<div class="fmark" style="grid-row:10;grid-column:1" title="ïçÏµ">ïç</div>');
+    bits.push('<div class="fmark" style="grid-row:11;grid-column:1" title="ï¹Ïµ">ï¹</div>');
     ELEMENTS.forEach((el) => {
       const row = el.row <= 7 ? el.row + 1 : el.row === 9 ? 10 : 11;
       bits.push(
-        `<button type="button" class="cell cat-${el.category}" data-z="${el.z}" style="grid-row:${row};grid-column:${el.col + 1};--d:${el.col * 34 + el.row * 14};--spec:${specGradient(el.lines)}" aria-label="${esc(el.nameZh)}ï¼Œ${el.symbol}ï¼ŒåŸå­åºæ•° ${el.z}" aria-pressed="false">` +
+        `<button type="button" class="cell cat-${el.category}" data-z="${el.z}" style="grid-row:${row};grid-column:${el.col + 1};--d:${el.col * 34 + el.row * 14};--spec:${specGradient(el.lines)}" aria-label="${esc(el.nameZh)}£¬${el.symbol}£¬Ô­×ÓĞòÊı ${el.z}" aria-pressed="false">` +
           `<span class="z">${el.z}</span><span class="sym">${esc(el.symbol)}</span><span class="zh">${esc(el.nameZh)}</span>` +
           `</button>`
       );
@@ -155,7 +155,7 @@
     document.getElementById("mode-story").setAttribute("aria-pressed", String(state.mode === "story"));
     document.getElementById("mode-explore").setAttribute("aria-pressed", String(state.mode === "explore"));
     densityBtn.hidden = !narrowQuery.matches;
-    densityBtn.textContent = state.density === "overview" ? "ç»†è¯»" : "æ˜Ÿå›¾";
+    densityBtn.textContent = state.density === "overview" ? "Ï¸¶Á" : "ĞÇÍ¼";
     densityBtn.setAttribute("aria-pressed", String(state.density === "overview"));
     tableScroll.classList.toggle("overview", state.density === "overview");
     tableScroll.classList.toggle("detail", state.density === "detail" && narrowQuery.matches);
@@ -165,8 +165,8 @@
   function renderStory() {
     if (state.mode === "explore") {
       storyHost.innerHTML =
-        '<p class="kicker">è‡ªç”±æ¢ç´¢</p><h2>118 æ ¼ï¼Œç‚¹å¼€å°±èƒ½æ ¸å¯¹</h2>' +
-        "<p class=\"body\">æœç´¢ç¬¦å·ã€ä¸­æ–‡åæˆ–è‹±æ–‡åã€‚ç„°è‰²å’Œè°±çº¿åªåœ¨æœ‰æ–‡çŒ®æ—¶å‡ºç°ï¼›æ²¡æœ‰æ ‡å‡†åŸå­é‡ï¼Œå°±å†™æ— ï¼Œä¸æ‹¿è´¨é‡æ•°å†’å……ã€‚</p>";
+        '<p class="kicker">×ÔÓÉÌ½Ë÷</p><h2>118 ¸ñ£¬µã¿ª¾ÍÄÜºË¶Ô</h2>' +
+        "<p class=\"body\">ËÑË÷·ûºÅ¡¢ÖĞÎÄÃû»òÓ¢ÎÄÃû¡£ÑæÉ«ºÍÆ×ÏßÖ»ÔÚÓĞÎÄÏ×Ê±³öÏÖ£»Ã»ÓĞ±ê×¼Ô­×ÓÁ¿£¬¾ÍĞ´ÎŞ£¬²»ÄÃÖÊÁ¿ÊıÃ°³ä¡£</p>";
       playEnter(storyHost);
       return;
     }
@@ -178,17 +178,17 @@
       )
       .join("");
     const dots = STORY.chapters.map((item, index) => {
-      return `<button type="button" data-chapter="${index}" aria-label="ç¬¬ ${index + 1} ç«  ${esc(item.title)}" aria-current="${index === state.chapter ? "true" : "false"}"></button>`;
+      return `<button type="button" data-chapter="${index}" aria-label="µÚ ${index + 1} ÕÂ ${esc(item.title)}" aria-current="${index === state.chapter ? "true" : "false"}"></button>`;
     }).join("");
     storyHost.innerHTML =
-      `<p class="kicker">ç¬¬ ${state.chapter + 1} ç«  Â· ${esc(ch.kicker)}</p>` +
+      `<p class="kicker">µÚ ${state.chapter + 1} ÕÂ ¡¤ ${esc(ch.kicker)}</p>` +
       `<h2>${esc(ch.title)}</h2>` +
       `<p class="body">${esc(ch.body)}</p>` +
       (chips ? `<ul class="chips">${chips}</ul>` : "") +
       (ch.chipNote ? `<p class="chip-note">${esc(ch.chipNote)}</p>` : "") +
       `<div class="story-nav">` +
-      `<button type="button" class="btn" id="prev-ch" ${state.chapter === 0 ? "disabled" : ""}>ä¸Šä¸€ç« </button>` +
-      `<button type="button" class="btn primary" id="next-ch">${state.chapter === STORY.chapters.length - 1 ? "æ”¹ä¸ºè‡ªç”±æ¢ç´¢" : "ä¸‹ä¸€ç« "}</button>` +
+      `<button type="button" class="btn" id="prev-ch" ${state.chapter === 0 ? "disabled" : ""}>ÉÏÒ»ÕÂ</button>` +
+      `<button type="button" class="btn primary" id="next-ch">${state.chapter === STORY.chapters.length - 1 ? "¸ÄÎª×ÔÓÉÌ½Ë÷" : "ÏÂÒ»ÕÂ"}</button>` +
       `<div class="dots">${dots}</div></div>`;
     playEnter(storyHost);
   }
@@ -199,7 +199,7 @@
     node.classList.add("is-entering");
   }
 
-  /* æ¯æ ¼åº•éƒ¨é‚£æ¡ç»†çº¿ï¼Œå°±æ˜¯å®ƒè‡ªå·±çš„å¯è§å…‰è°±ï¼š380â€“780 nm é‡Œæ¯æ¡å¼ºçº¿ä¸€ä¸ªåˆ»åº¦ */
+  /* Ã¿¸ñµ×²¿ÄÇÌõÏ¸Ïß£¬¾ÍÊÇËü×Ô¼ºµÄ¿É¼û¹âÆ×£º380¨C780 nm ÀïÃ¿ÌõÇ¿ÏßÒ»¸ö¿Ì¶È */
   function specGradient(lines) {
     if (!lines || !lines.length) return "none";
     let imax = 1;
@@ -226,10 +226,10 @@
       node.classList.toggle("is-miss", !ok);
       const selected = el.z === state.z;
       node.setAttribute("aria-pressed", String(selected));
-      /* é€‰ä¸­æ ¼ï¼šé‡‘è‰²ç„¦ç‚¹ï¼›æœ‰é€‰ä¸­æ—¶å‹æš—å…¶ä½™ï¼ˆæ•…äº‹ç« å†…åŒä¼´ä¿æŒå¯è¯»ï¼‰ */
+      /* Ñ¡ÖĞ¸ñ£º½ğÉ«½¹µã£»ÓĞÑ¡ÖĞÊ±Ñ¹°µÆäÓà£¨¹ÊÊÂÕÂÄÚÍ¬°é±£³Ö¿É¶Á£© */
       node.classList.toggle("is-focus", selected);
       const storyOn = state.mode === "story" && !filtering && focus.size > 0;
-      const dim = !selected && (storyOn ? !focus.has(el.z) : true);
+      const dim = storyOn && !selected && !focus.has(el.z);
       node.classList.toggle("is-dim", dim);
     });
     legend.querySelectorAll("button").forEach((node) => {
@@ -270,18 +270,18 @@
   function renderPanel() {
     const el = byZ.get(state.z);
     if (!el) {
-      panel.innerHTML = '<p class="empty">å…ƒç´ æ•°æ®æ²¡æœ‰è½½å…¥ã€‚</p>';
+      panel.innerHTML = '<p class="empty">ÔªËØÊı¾İÃ»ÓĞÔØÈë¡£</p>';
       return;
     }
     const weight = el.weight
-      ? `${esc(el.weight)}${el.weightInterval ? `<br><span>åŒºé—´ ${esc(el.weightInterval)}</span>` : ""}`
-      : "æ— æ ‡å‡†åŸå­é‡";
-    const phase = el.phaseZh || "æœªæœ‰å®è§‚æ ·å“";
-    const group = el.group ? `ç¬¬ ${el.group} æ—` : "f åŒºï¼Œä¸å•æ ‡æ—";
-    const shellText = el.shells.map((count, index) => `${SHELL[index] || index + 1} å±‚ ${count}`).join("ï¼Œ");
+      ? `${esc(el.weight)}${el.weightInterval ? `<br><span>Çø¼ä ${esc(el.weightInterval)}</span>` : ""}`
+      : "ÎŞ±ê×¼Ô­×ÓÁ¿";
+    const phase = el.phaseZh || "Î´ÓĞºê¹ÛÑùÆ·";
+    const group = el.group ? `µÚ ${el.group} ×å` : "f Çø£¬²»µ¥±ê×å";
+    const shellText = el.shells.map((count, index) => `${SHELL[index] || index + 1} ²ã ${count}`).join("£¬");
     const lines = el.lines || [];
     const spectrum = lines.length
-      ? `<div class="spectrum" role="img" aria-label="å¯è§å‘å°„çº¿ç¤ºæ„">${lines
+      ? `<div class="spectrum" role="img" aria-label="¿É¼û·¢ÉäÏßÊ¾Òâ">${lines
           .map((line, index) => {
             const left = Math.min(99, Math.max(1, ((line.nm - 380) / 400) * 100));
             const color = wavelengthToRgb(line.nm);
@@ -292,46 +292,46 @@
           <ul class="lines">${lines
             .map((line) => {
               const name = lineName(line);
-              return `<li><span>${line.nm.toFixed(3)} nm</span><span>${esc(line.ion)}</span><span>${esc(name)}</span><span class="inten">å¼ºåº¦ ${line.intensity}${line.persistent ? " Â· æŒä¹…" : ""}</span></li>`;
+              return `<li><span>${line.nm.toFixed(3)} nm</span><span>${esc(line.ion)}</span><span>${esc(name)}</span><span class="inten">Ç¿¶È ${line.intensity}${line.persistent ? " ¡¤ ³Ö¾Ã" : ""}</span></li>`;
             })
             .join("")}</ul>`
-      : `<p class="empty">æ— å¯è§å¼ºçº¿ã€‚</p>`;
+      : `<p class="empty">ÎŞ¿É¼ûÇ¿Ïß¡£</p>`;
     const flame = el.flame
       ? `<div class="flame">` +
           `<div class="flame-slot" style="--flame:${esc(el.flame.swatch)}" data-color="${esc(el.flame.swatch)}"></div>` +
           `<div class="flame-copy"><strong>${esc(el.flame.color)}</strong>` +
           `<p class="note">${esc(el.flame.note)}</p>` +
-          `<p class="note flame-fine">ç¤ºæ„è‰²ï¼Œéæµ‹è‰²å€¼ã€‚</p></div>` +
+          `<p class="note flame-fine">Ê¾ÒâÉ«£¬·Ç²âÉ«Öµ¡£</p></div>` +
         `</div>`
-      : `<p class="empty">æœªæ”¶å½•å®šæ€§ç„°è‰²ã€‚</p>`;
-    const reading = el.reading ? `ï¼ˆ${esc(el.reading)}ï¼‰` : "";
+      : `<p class="empty">Î´ÊÕÂ¼¶¨ĞÔÑæÉ«¡£</p>`;
+    const reading = el.reading ? `£¨${esc(el.reading)}£©` : "";
     panel.innerHTML =
       `<div class="handle"></div>` +
       `<div class="panel-head"><div><p class="symbol-xl cat-${el.category}" style="color:var(--${el.category})">${esc(el.symbol)}</p>` +
       `<h2>${esc(el.nameZh)}${reading}</h2><p class="en">${esc(el.nameEn)}</p></div>` +
-      `<div><button type="button" class="icon-btn sheet-only" id="close-sheet">å…³é—­</button><div class="cat-pill"><i class="swatch cat-${el.category}"></i>${esc(el.categoryZh)}</div></div></div>` +
+      `<div><button type="button" class="icon-btn sheet-only" id="close-sheet">¹Ø±Õ</button><div class="cat-pill"><i class="swatch cat-${el.category}"></i>${esc(el.categoryZh)}</div></div></div>` +
       `<div class="facts">` +
-      `<div class="fact"><span>åŸå­åºæ•°</span><strong>${el.z}</strong></div>` +
-      `<div class="fact"><span>ç®€çº¦æ ‡å‡†åŸå­é‡</span><strong>${weight}</strong></div>` +
-      `<div class="fact"><span>ä½ç½®</span><strong>ç¬¬ ${el.period} å‘¨æœŸ Â· ${group}</strong></div>` +
-      `<div class="fact"><span>åŒºå— / ç‰©æ€</span><strong>${el.block} åŒº Â· ${phase}</strong></div>` +
+      `<div class="fact"><span>Ô­×ÓĞòÊı</span><strong>${el.z}</strong></div>` +
+      `<div class="fact"><span>¼òÔ¼±ê×¼Ô­×ÓÁ¿</span><strong>${weight}</strong></div>` +
+      `<div class="fact"><span>Î»ÖÃ</span><strong>µÚ ${el.period} ÖÜÆÚ ¡¤ ${group}</strong></div>` +
+      `<div class="fact"><span>Çø¿é / ÎïÌ¬</span><strong>${el.block} Çø ¡¤ ${phase}</strong></div>` +
       `</div>` +
       (el.phaseNote ? `<p class="note">${esc(el.phaseNote)}</p>` : "") +
       (el.caution ? `<p class="warn">${esc(el.caution)}</p>` : "") +
       (el.seriesNote ? `<p class="note">${esc(el.seriesNote)}</p>` : "") +
-      (el.z >= 104 ? `<p class="note">ç±»åˆ«æŒ‰æ—çš„ä½ç½®æ ‡æ³¨ã€‚åŒ–å­¦æ€§è´¨å¤§å¤šè¿˜æ²¡æœ‰æµ‹å…¨ã€‚</p>` : "") +
-      `<h3 class="section-title">ç”µå­å±‚</h3>` +
+      (el.z >= 104 ? `<p class="note">Àà±ğ°´×åµÄÎ»ÖÃ±ê×¢¡£»¯Ñ§ĞÔÖÊ´ó¶à»¹Ã»ÓĞ²âÈ«¡£</p>` : "") +
+      `<h3 class="section-title">µç×Ó²ã</h3>` +
       `<div class="shell-wrap">${shellSvg(el)}<div><p class="config">${esc(el.configShort)}</p><ul class="shell-list">${el.shells
-        .map((count, index) => `<li><span>${SHELL[index] || "å£³"}</span><span>${count}</span></li>`)
+        .map((count, index) => `<li><span>${SHELL[index] || "¿Ç"}</span><span>${count}</span></li>`)
         .join("")}</ul></div></div>` +
-      `<p class="note">${esc(STATUS[el.configStatus] || "")}ã€‚${esc(shellText)}ã€‚åœ†ç‚¹åªè¡¨ç¤ºæ¯ä¸€ä¸»å£³å±‚æœ‰å¤šå°‘ç”µå­ï¼Œä¸æ˜¯è½¨é“çš„çœŸå®å½¢çŠ¶ã€‚</p>` +
+      `<p class="note">${esc(STATUS[el.configStatus] || "")}¡£${esc(shellText)}¡£Ô²µãÖ»±íÊ¾Ã¿Ò»Ö÷¿Ç²ãÓĞ¶àÉÙµç×Ó£¬²»ÊÇ¹ìµÀµÄÕæÊµĞÎ×´¡£</p>` +
       (el.configNote ? `<p class="note">${esc(el.configNote)}</p>` : "") +
-      `<h3 class="section-title">å‘å°„å…‰è°±</h3>${spectrum}` +
-      `<p class="note">${esc(el.spectrumNote || "ç©ºæ°”æ³¢é•¿ï¼ŒèŠ‚é€‰è‡ª NIST å¼ºçº¿è¡¨çš„å¯è§åŒºï¼Œä¸æ˜¯å®Œæ•´å…‰è°±ã€‚é å¾—å¤ªè¿‘çš„çº¿ä¼šå åœ¨ä¸€èµ·ã€‚")} è‰²å¸¦ä¸Šçš„é¢œè‰²æŒ‰æ³¢é•¿è¿‘ä¼¼æ¢ç®—ï¼Œä¸æ˜¯æ‹æ‘„çš„å…‰è°±ç…§ç‰‡ã€‚</p>` +
-      `<h3 class="section-title">ç„°è‰²</h3>${flame}` +
-      `<h3 class="section-title">ç”¨é€”</h3><p>${esc(el.uses)}</p>` +
-      (el.body ? `<h3 class="section-title">åœ¨äººä½“é‡Œ</h3><p>${esc(el.body)}</p>` : "") +
-      `<div class="panel-nav"><button type="button" class="btn" id="prev-el">ä¸Šä¸€ä¸ª</button><button type="button" class="btn" id="next-el">ä¸‹ä¸€ä¸ª</button></div>`;
+      `<h3 class="section-title">·¢Éä¹âÆ×</h3>${spectrum}` +
+      `<p class="note">${esc(el.spectrumNote || "¿ÕÆø²¨³¤£¬½ÚÑ¡×Ô NIST Ç¿Ïß±íµÄ¿É¼ûÇø£¬²»ÊÇÍêÕû¹âÆ×¡£¿¿µÃÌ«½üµÄÏß»áµşÔÚÒ»Æğ¡£")} É«´øÉÏµÄÑÕÉ«°´²¨³¤½üËÆ»»Ëã£¬²»ÊÇÅÄÉãµÄ¹âÆ×ÕÕÆ¬¡£</p>` +
+      `<h3 class="section-title">ÑæÉ«</h3>${flame}` +
+      `<h3 class="section-title">ÓÃÍ¾</h3><p>${esc(el.uses)}</p>` +
+      (el.body ? `<h3 class="section-title">ÔÚÈËÌåÀï</h3><p>${esc(el.body)}</p>` : "") +
+      `<div class="panel-nav"><button type="button" class="btn" id="prev-el">ÉÏÒ»¸ö</button><button type="button" class="btn" id="next-el">ÏÂÒ»¸ö</button></div>`;
     syncSheet();
     playEnter(panel);
   }
@@ -356,7 +356,7 @@
     }
     renderCells();
     renderPanel();
-    /* ä¸è§†è§‰ç„¦ç‚¹åŒå¸§ï¼šæ›´å¼ºç‚¹é€‰éŸ³ + UI è½»ç‚¹ï¼ˆæ— è°±çº¿åˆ™ç©ºå¿ƒå©ï¼‰ */
+    /* ÓëÊÓ¾õ½¹µãÍ¬Ö¡£º¸üÇ¿µãÑ¡Òô + UI Çáµã£¨ÎŞÆ×ÏßÔò¿ÕĞÄßµ£© */
     if (!opts || !opts.silentAudio) {
       if (window.__playElement) window.__playElement(el.z, { select: true });
     }
@@ -410,11 +410,11 @@
   function openAbout() {
     const dialog = document.getElementById("about");
     const items = (META.sources || [])
-      .map((source) => `<li><strong>${esc(source.title)}</strong>ã€€${esc(source.detail)}</li>`)
+      .map((source) => `<li><strong>${esc(source.title)}</strong>¡¡${esc(source.detail)}</li>`)
       .join("");
     dialog.innerHTML =
-      `<h3>æ•°æ®ä»å“ªæ¥</h3><ol>${items}</ol>` +
-      `<div class="actions"><button type="button" class="btn primary" id="close-about">çŸ¥é“äº†</button></div>`;
+      `<h3>Êı¾İ´ÓÄÄÀ´</h3><ol>${items}</ol>` +
+      `<div class="actions"><button type="button" class="btn primary" id="close-about">ÖªµÀÁË</button></div>`;
     dialog.showModal();
     dialog.querySelector("#close-about").addEventListener("click", () => dialog.close());
   }
@@ -422,13 +422,13 @@
   function openAudio() {
     const dialog = document.getElementById("audio-note");
     dialog.innerHTML =
-      `<h3>å…ƒç´ çš„å£°éŸ³</h3>` +
-      `<p>å½±ç‰‡è‡ªå¸¦æ—ç™½ä¸é…ä¹ã€‚è¡¨æ ¼é‡Œçš„æ¯ä¸€ç§å…ƒç´ ä¹Ÿæœ‰è‡ªå·±çš„éŸ³è‰²ï¼šæŠŠå¯è§å…‰è°±ç­‰æ¯”æ¬è¿›å¬åŸŸï¼Œ` +
-      `è°±çº¿ä¹‹é—´çš„éŸ³ç¨‹å…³ç³»ä¿æŒçœŸå®ã€‚æ‚¬æµ®æˆ–ç‚¹æŒ‰ä»»æ„æ ¼å­å°±èƒ½å¬åˆ°ã€‚</p>` +
-      `<p class="note">é’ çš„ D åŒçº¿åªç›¸å·® 0.15%ï¼Œæ¬åˆ°è€³æœµé‡Œæ˜¯ 0.147 Hz çš„æ‹éŸ³ï¼Œäººè€³å¬ä¸å‡ºæ¥â€”â€”` +
-      `æ‰€ä»¥é’ æ˜¯ä¸€ä¸ªçº¯éŸ³ã€‚è¿™ä¸æ˜¯åšä¸å‡ºæ¥ï¼Œæ˜¯ä¸è¯¥ç¼–ã€‚</p>` +
-      `<div class="actions"><button type="button" class="btn" id="audition">è¯•å¬é’ </button>` +
-      `<button type="button" class="btn primary" id="close-audio">å¥½</button></div>`;
+      `<h3>ÔªËØµÄÉùÒô</h3>` +
+      `<p>Ó°Æ¬×Ô´øÅÔ°×ÓëÅäÀÖ¡£±í¸ñÀïµÄÃ¿Ò»ÖÖÔªËØÒ²ÓĞ×Ô¼ºµÄÒôÉ«£º°Ñ¿É¼û¹âÆ×µÈ±È°á½øÌıÓò£¬` +
+      `Æ×ÏßÖ®¼äµÄÒô³Ì¹ØÏµ±£³ÖÕæÊµ¡£Ğü¸¡»òµã°´ÈÎÒâ¸ñ×Ó¾ÍÄÜÌıµ½¡£</p>` +
+      `<p class="note">ÄÆµÄ D Ë«ÏßÖ»Ïà²î 0.15%£¬°áµ½¶ú¶äÀïÊÇ 0.147 Hz µÄÅÄÒô£¬ÈË¶úÌı²»³öÀ´¡ª¡ª` +
+      `ËùÒÔÄÆÊÇÒ»¸ö´¿Òô¡£Õâ²»ÊÇ×ö²»³öÀ´£¬ÊÇ²»¸Ã±à¡£</p>` +
+      `<div class="actions"><button type="button" class="btn" id="audition">ÊÔÌıÄÆ</button>` +
+      `<button type="button" class="btn primary" id="close-audio">ºÃ</button></div>`;
     dialog.showModal();
     dialog.querySelector("#audition").addEventListener("click", () => {
       if (window.__playElement) window.__playElement(11, { select: true });
@@ -591,7 +591,7 @@
 
   function init() {
     if (!ELEMENTS.length) {
-      table.innerHTML = '<p class="empty">å…ƒç´ æ•°æ®æ²¡æœ‰è½½å…¥ã€‚è¯·ç¡®è®¤ data/elements.js ä¸é¡µé¢åœ¨åŒä¸€ç›®å½•ç»“æ„é‡Œã€‚</p>';
+      table.innerHTML = '<p class="empty">ÔªËØÊı¾İÃ»ÓĞÔØÈë¡£ÇëÈ·ÈÏ data/elements.js ÓëÒ³ÃæÔÚÍ¬Ò»Ä¿Â¼½á¹¹Àï¡£</p>';
       return;
     }
     buildTable();
