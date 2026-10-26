@@ -1,4 +1,4 @@
-﻿import * as THREE from "../lib/three.module.js";
+import * as THREE from "../lib/three.module.js";
 
 /* 元素档案里的三维原子：核 + 按主量子数分层的电子轨道。
    电子数来自 shells（真实数据）；轨道形状仍是示意，面板里的说明照旧。 */
