@@ -101,6 +101,64 @@
     return voices.length;
   };
 
+  /* UI 轻点：极短噪声瞬态，与格子高亮同帧，不当成谱线 */
+  StardustAudio.prototype.playUiClick = function (o) {
+    o = o || {};
+    var ctx = this.unlock();
+    if (!ctx) return null;
+    var t0 = ctx.currentTime;
+    var dur = o.dur || 0.042;
+    var n = Math.max(32, Math.floor(ctx.sampleRate * dur));
+    var buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < n; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (n * 0.16));
+    }
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    var bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.setValueAtTime(o.freq || 1750, t0);
+    bp.Q.setValueAtTime(1.1, t0);
+    var g = ctx.createGain();
+    var peak = o.gain === undefined ? 0.15 : o.gain;
+    g.gain.setValueAtTime(peak, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    src.connect(bp); bp.connect(g); g.connect(this.master);
+    src.start(t0); src.stop(t0 + dur + 0.02);
+    return true;
+  };
+
+  /* 无可见强线：诚实的空响——低通噪声空心轻叩，不编假音高 */
+  StardustAudio.prototype.playEmpty = function (o) {
+    o = o || {};
+    var ctx = this.unlock();
+    if (!ctx) return null;
+    var t0 = ctx.currentTime;
+    var dur = o.dur || 0.15;
+    var n = Math.max(64, Math.floor(ctx.sampleRate * dur));
+    var buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < n; i++) {
+      var env = Math.exp(-i / (n * 0.28));
+      data[i] = (Math.random() * 2 - 1) * env;
+    }
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    var lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(o.freq || 380, t0);
+    lp.Q.setValueAtTime(0.7, t0);
+    var g = ctx.createGain();
+    var peak = o.gain === undefined ? 0.09 : o.gain;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.001, peak), t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    src.connect(lp); lp.connect(g); g.connect(this.master);
+    src.start(t0); src.stop(t0 + dur + 0.03);
+    return true;
+  };
+
   StardustAudio.prototype.stopAll = function () {
     if (!this.ctx) return;
     var now = this.ctx.currentTime;

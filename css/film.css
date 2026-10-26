@@ -158,7 +158,7 @@
   }
   .toolbar::-webkit-scrollbar { display: none; }
   .toolbar > * { flex: 0 0 auto; }
-  .cell.is-dim { opacity: .55; }
+  .cell.is-dim { opacity: .38; filter: saturate(.5) brightness(.88); }
   .listen-hint { display: none; }
   /* 图例改成单行可横滑，省出表格高度；刻度的说明文字在窄屏省略 */
   .legend {

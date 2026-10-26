@@ -312,11 +312,27 @@ async function initChords() {
     au.setSpectra(spectra);
   } catch (e) { au = null; }
 }
-function playElement(z) {
+function playElement(z, opts) {
+  opts = opts || {};
   if (!au) return;
   au.unlock();
   const n = nodes.find((x) => x.z === Number(z));
-  if (n) au.playChord(n.symbol, { dur: 3.2, gain: 0.18 });
+  if (!n) return;
+  const select = !!opts.select;
+  /* 点选：同帧 UI 轻点 + 更强和弦；悬浮：更短更弱 */
+  if (select) au.playUiClick({ gain: 0.14 });
+  const hasLines = au.chord(n.symbol).length > 0;
+  if (!hasLines) {
+    au.playEmpty({
+      gain: select ? 0.11 : 0.055,
+      dur: select ? 0.16 : 0.1,
+    });
+    return;
+  }
+  au.playChord(n.symbol, {
+    dur: select ? 3.6 : 1.55,
+    gain: select ? 0.24 : 0.1,
+  });
 }
 function bindTableAudio() {
   const table = byId("table");
@@ -327,12 +343,9 @@ function bindTableAudio() {
     if (!cell) return;
     const z = cell.getAttribute("data-z");
     if (z === last) return;
-    last = z; playElement(z);
+    last = z; playElement(z, { select: false });
   }, { passive: true });
-  table.addEventListener("click", (e) => {
-    const cell = e.target.closest("[data-z]");
-    if (cell) playElement(cell.getAttribute("data-z"));
-  });
+  /* 点选音效交给 app.js select()，避免与 click 叠响 */
 }
 
 window.__filmStart = startFilm;

@@ -222,12 +222,14 @@
     table.querySelectorAll(".cell").forEach((node) => {
       const el = byZ.get(Number(node.dataset.z));
       const ok = matches(el);
-      node.classList.toggle("is-miss", !ok);
       node.hidden = false;
-      node.setAttribute("aria-pressed", String(el.z === state.z));
-      const highlighted = state.mode === "story" && !filtering && focus.size && focus.has(el.z);
-      const dim = state.mode === "story" && !filtering && focus.size && !focus.has(el.z) && el.z !== state.z;
-      node.classList.toggle("is-focus", highlighted);
+      node.classList.toggle("is-miss", !ok);
+      const selected = el.z === state.z;
+      node.setAttribute("aria-pressed", String(selected));
+      /* 选中格：金色焦点；有选中时压暗其余（故事章内同伴保持可读） */
+      node.classList.toggle("is-focus", selected);
+      const storyOn = state.mode === "story" && !filtering && focus.size > 0;
+      const dim = !selected && (storyOn ? !focus.has(el.z) : true);
       node.classList.toggle("is-dim", dim);
     });
     legend.querySelectorAll("button").forEach((node) => {
@@ -354,6 +356,10 @@
     }
     renderCells();
     renderPanel();
+    /* 与视觉焦点同帧：更强点选音 + UI 轻点（无谱线则空心叩） */
+    if (!opts || !opts.silentAudio) {
+      if (window.__playElement) window.__playElement(el.z, { select: true });
+    }
     const node = table.querySelector(`.cell[data-z="${el.z}"]`);
     if (node && !desktopQuery.matches) {
       node.scrollIntoView({ inline: "center", block: "nearest" });
