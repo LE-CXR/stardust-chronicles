@@ -90,7 +90,7 @@
       if (!AC) return null;
       this.ctx = new AC();
       this.master = this.ctx.createGain();
-      this.master.gain.value = this.opts.master === undefined ? 0.75 : this.opts.master;
+      this.master.gain.value = this.opts.master === undefined ? 0.55 : this.opts.master;
       this.master.connect(this.ctx.destination);
     }
     if (this.ctx.state === "suspended" && this.ctx.resume) this.ctx.resume();
@@ -217,8 +217,8 @@
 
     if (hasLines && chordGain > 0) {
       this.playChord(symbol, {
-        dur: o.dur || 3.6,
-        gain: o.chordGain === undefined ? chordGain : o.chordGain
+        dur: o.dur || 1.6,
+        gain: o.chordGain === undefined ? chordGain * 0.75 : o.chordGain
       });
     }
     return eventId;
