@@ -1,7 +1,7 @@
 import * as THREE from "../lib/three.module.js";
 
-/* 影片：一条连续镜�?—�?星尘里氢和氦先出现，恒星把表一格一格往后写�?
-   超新星那一下把剩下的重元素砸进来，最后镜头推近，交还给可以点的周期表�?*/
+/* 影片：一条连续镜头 —— 星尘里氢和氦先出现，恒星把表一格一格往后写，
+   超新星那一下把剩下的重元素砸进来，最后镜头推近，交还给可以点的周期表。 */
 
 const byId = (id) => document.getElementById(id);
 const fEl = byId("film");
@@ -13,8 +13,8 @@ const barEl = byId("film-bar");
 const tcEl = byId("film-tc");
 const flashEl = byId("film-flash");
 
-const CAT_COLOR = { "碱金�?:0xff8a5c, "碱土金属":0xffc266, "过渡金属":0x8fb6d6, "贫金�?:0xa8c4b8,
-  "类金�?:0x9fd3c7, "非金�?:0x8ee0b0, "卤素":0xc8f08a, "稀有气�?:0xc9a8f0, "镧系":0xf0a8c0, "锕系":0xe0a0a0 };
+const CAT_COLOR = { "碱金属":0xff8a5c, "碱土金属":0xffc266, "过渡金属":0x8fb6d6, "贫金属":0xa8c4b8,
+  "类金属":0x9fd3c7, "非金属":0x8ee0b0, "卤素":0xc8f08a, "稀有气体":0xc9a8f0, "镧系":0xf0a8c0, "锕系":0xe0a0a0 };
 const BURST = 52.89;
 
 let acts = [], cues = [], total = 110.79;
@@ -37,7 +37,7 @@ function rng(seed) {
 }
 const rnd = rng(137);
 
-/* 元素什么时候到：顺序就是核合成的顺序，重元素等超新�?*/
+/* 元素什么时候到：顺序就是核合成的顺序，重元素等超新星 */
 function arrival(z) {
   if (z <= 2) return 2.6 + (z - 1) * 2.4;
   if (z <= 8) return 14 + (z - 3) * 2.0;
@@ -132,7 +132,7 @@ function buildScene(els) {
 
 const _v = new THREE.Vector3();
 function render(t) {
-  if (!renderer || !scene || !camera) return;
+  if (!camera || !renderer || !scene) return;
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
     const vis = clamp01((t - (n.at - 0.8)) / 0.6);
@@ -169,7 +169,7 @@ function render(t) {
     const k = clamp01((t - 89.4) / (105.6 - 89.4));
     x = Math.sin(t * 0.12) * 4; y = -8 + Math.sin(t * 0.1) * 1.5; z = THREE.MathUtils.lerp(150, 158, k);
   }
-  /* 竖屏放不�?18 列的构图：拉远，并在最后两幕改成沿表格横移的镜�?*/
+  /* 竖屏放不下 18 列的构图：拉远，并在最后两幕改成沿表格横移的镜头 */
   if (innerWidth / innerHeight < 1) {
     const zoom = 1.58;
     x *= zoom; y *= zoom; z *= zoom;
@@ -252,7 +252,7 @@ function finish() {
   }, 900);
 }
 
-/* 影片结束那一刻才提示：这个站最特别的东西是听得见的，但得让人知�?*/
+/* 影片结束那一刻才提示：这个站最特别的东西是听得见的，但得让人知道 */
 function showListenHint() {
   try { if (sessionStorage.getItem("stardust-hint") === "1") return; } catch (e) {}
   const tip = document.createElement("div");
@@ -280,27 +280,28 @@ function startFilm(opts) {
   fEl.classList.remove("is-out");
   gate.classList.remove("is-out");
   const playBtn = byId("film-play");
+  if (playBtn) { playBtn.disabled = true; playBtn.setAttribute("aria-disabled", "true"); }
   if (!renderer) {
-    if (playBtn) { playBtn.disabled = true; playBtn.setAttribute("aria-disabled", "true"); }
     Promise.all([fetch("data/acts.json").then((r) => r.json()),
                  fetch("data/elements.json").then((r) => r.json())]).then(([tl, data]) => {
       acts = tl.acts; cues = tl.cues; total = tl.total;
       buildScene(data.elements);
+      if (playBtn) { playBtn.disabled = false; playBtn.removeAttribute("aria-disabled"); }
     }).catch(() => finish());
   } else {
-    if (playBtn) { playBtn.disabled = false; playBtn.removeAttribute("aria-disabled"); }
     render(0); updateUI(0);
+    if (playBtn) { playBtn.disabled = false; playBtn.removeAttribute("aria-disabled"); }
   }
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) finish();
 }
 
 function begin() {
-  if (!renderer || !camera) return;
+  if (!camera) return;
   gate.classList.add("is-out");
   audioOk = false;
   try {
     audio.currentTime = 0;
-    /* 床轨压到 hits 下：原曲峰值近 0 dBFS，默�?1.0 盖住点击音效 */
+    /* 床轨压到 hits 下：原曲峰值近 0 dBFS，默认 1.0 盖住点击音效 */
     audio.volume = 0.16;
     const p = audio.play();
     if (p && p.then) p.then(() => { audioOk = true; }).catch(() => { audioOk = false; });
@@ -340,7 +341,7 @@ function playElement(z, opts) {
   au.unlock();
   const n = nodes.find((x) => x.z === Number(z));
   if (!n) return;
-  /* 点选：SFX-SPEC 角色 WAV 与金边同帧；悬浮：极轻短声，禁止扫表叠成背景�?*/
+  /* 点选：SFX-SPEC 角色 WAV 与金边同帧；悬浮：极轻短声，禁止扫表叠成背景乐 */
   if (opts.select) {
     duckFilmBed(480);
     au.playSelect(n.symbol);
@@ -352,7 +353,7 @@ function playElement(z, opts) {
     au.playEmpty({ gain: 0.04, dur: 0.07 });
     return;
   }
-  /* SFX-SPEC ui.hover：短、轻；谱线只留辨�?*/
+  /* SFX-SPEC ui.hover：短、轻；谱线只留辨认 */
   au.playChord(n.symbol, { dur: 0.22, gain: 0.045 });
 }
 function bindTableAudio() {
@@ -366,7 +367,7 @@ function bindTableAudio() {
     if (z === last) return;
     last = z; playElement(z, { select: false });
   }, { passive: true });
-  /* 点选音效交�?app.js select()，避免与 click 叠响 */
+  /* 点选音效交给 app.js select()，避免与 click 叠响 */
 }
 
 window.__filmStart = startFilm;
