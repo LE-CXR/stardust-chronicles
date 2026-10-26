@@ -1,4 +1,4 @@
-/* 星尘编年史 · 周期表、故事模式、元素档案。 */
+﻿/* 星尘编年史 · 周期表、故事模式、元素档案。 */
 (function () {
   const ELEMENTS = window.STARDUST_ELEMENTS || [];
   const STORY = window.STARDUST_STORY || { chapters: [] };
@@ -295,7 +295,7 @@
               return `<li><span>${line.nm.toFixed(3)} nm</span><span>${esc(line.ion)}</span><span>${esc(name)}</span><span class="inten">强度 ${line.intensity}${line.persistent ? " · 持久" : ""}</span></li>`;
             })
             .join("")}</ul>`
-      : `<p class="empty">NIST《基础原子光谱数据手册》没有收录这个元素可用的可见强线。这里留空，不补画。</p>`;
+      : `<p class="empty">无可见强线。</p>`;
     const flame = el.flame
       ? `<div class="flame">` +
           `<div class="flame-slot" style="--flame:${esc(el.flame.swatch)}" data-color="${esc(el.flame.swatch)}"></div>` +
