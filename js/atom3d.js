@@ -1,4 +1,4 @@
-import * as THREE from "../lib/three.module.js";
+﻿import * as THREE from "../lib/three.module.js";
 
 /* 元素档案里的三维原子：核 + 按主量子数分层的电子轨道。
    电子数来自 shells（真实数据）；轨道形状仍是示意，面板里的说明照旧。 */
@@ -333,10 +333,10 @@ canvas.addEventListener("wheel", function (e) {
   e.preventDefault();
   wheelAcc += e.deltaY;
   const now = performance.now();
-  if (Math.abs(wheelAcc) >= 50 && now > wheelLock) {
-    wheelLock = now + 140;
+  if (Math.abs(wheelAcc) >= 24 && now > wheelLock) {
+    wheelLock = now + 70;
     wheelAcc = 0;
-    setZoom(zoomTarget + (up ? 0.055 : -0.055), false);
+    setZoom(zoomTarget + (up ? 0.16 : -0.16), false);
   }
 }, { passive: false });
 
@@ -574,7 +574,7 @@ function tick() {
   tiltY += (aimY - tiltY) * 0.06;
   atom.rotation.x = -0.18 + tiltX + userX;
   peelCur += (peelTarget - peelCur) * Math.min(1, dt * 9);
-  zoom += (zoomTarget - zoom) * Math.min(1, dt * 8);
+  zoom += (zoomTarget - zoom) * Math.min(1, dt * 14);
   if (focused) {
     const k = Math.min(1, Math.max(0, (now - focusT0) / 900));
     const e = 1 - Math.pow(1 - k, 3);
