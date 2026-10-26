@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "xerj": {
+      "command": "C:\\Users\\27000\\AppData\\Local\\Programs\\xerj\\xerj.exe",
+      "args": ["mcp"],
+      "env": {
+        "XERJ_URL": "http://127.0.0.1:9200"
+      }
+    }
+  }
+}
