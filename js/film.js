@@ -292,6 +292,8 @@ function begin() {
   audioOk = false;
   try {
     audio.currentTime = 0;
+    /* 床轨压到 hits 下：原曲峰值近 0 dBFS，默认 1.0 盖住点击音效 */
+    audio.volume = 0.28;
     const p = audio.play();
     if (p && p.then) p.then(() => { audioOk = true; }).catch(() => { audioOk = false; });
     else audioOk = true;
@@ -313,6 +315,17 @@ async function initChords() {
     au.preload();
   } catch (e) { au = null; }
 }
+function duckFilmBed(ms) {
+  if (!audio) return;
+  try {
+    const base = 0.28;
+    audio.volume = Math.min(audio.volume, 0.12);
+    clearTimeout(duckFilmBed._t);
+    duckFilmBed._t = setTimeout(() => {
+      try { if (!audio.paused) audio.volume = base; } catch (e) {}
+    }, ms || 420);
+  } catch (e) {}
+}
 function playElement(z, opts) {
   opts = opts || {};
   if (!au) return;
@@ -321,6 +334,7 @@ function playElement(z, opts) {
   if (!n) return;
   /* 点选：SFX-SPEC 角色 WAV 与金边同帧；悬浮：更短更弱谱线/空响 */
   if (opts.select) {
+    duckFilmBed(480);
     au.playSelect(n.symbol);
     return;
   }
