@@ -301,9 +301,9 @@
           `<div class="flame-slot" style="--flame:${esc(el.flame.swatch)}" data-color="${esc(el.flame.swatch)}"></div>` +
           `<div class="flame-copy"><strong>${esc(el.flame.color)}</strong>` +
           `<p class="note">${esc(el.flame.note)}</p>` +
-          `<p class="note flame-fine">火焰形态是程序化示意，颜色取自该元素的定性焰色，不是测色值。</p></div>` +
+          `<p class="note flame-fine">示意色，非测色值。</p></div>` +
         `</div>`
-      : `<p class="empty">没有列入可靠的定性焰色。留空不是「火焰一定无色」，而是这份档案不猜测。</p>`;
+      : `<p class="empty">未收录定性焰色。</p>`;
     const reading = el.reading ? `（${esc(el.reading)}）` : "";
     panel.innerHTML =
       `<div class="handle"></div>` +
