@@ -3,3 +3,12 @@ __pycache__/
 agent-tools/
 .DS_Store
 assets/film/*.mp4
+
+# local agent / inbox
+.codex/
+.mcp.json
+_inbox/
+*.rej
+*.patch
+_polish.py
+

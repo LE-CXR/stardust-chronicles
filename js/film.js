@@ -252,7 +252,7 @@ function finish() {
   }, 900);
 }
 
-/* 影片结束那一刻才提示：这个站最特别的东西是听得见的，但得让人知道 */
+/* 散场提示 */
 function showListenHint() {
   try { if (sessionStorage.getItem("stardust-hint") === "1") return; } catch (e) {}
   const tip = document.createElement("div");

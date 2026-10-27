@@ -1,6 +1,0 @@
-﻿[mcp_servers.xerj]
-command = "C:\\Users\\27000\\AppData\\Local\\Programs\\xerj\\xerj.exe"
-args = ["mcp"]
-
-[mcp_servers.xerj.env]
-XERJ_URL = "http://localhost:9200"
