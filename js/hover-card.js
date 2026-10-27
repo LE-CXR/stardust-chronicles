@@ -61,7 +61,7 @@
   function applyTilt(kx, ky) {
     if (!card || !card._pos) return;
     card.style.transform = "perspective(700px) translate(" + card._pos.x + "px," + card._pos.y +
-      "px) rotateX(" + (-ky * 5).toFixed(2) + "deg) rotateY(" + (kx * 7).toFixed(2) + "deg)";
+      "px)";
   }
 
   function hide() {

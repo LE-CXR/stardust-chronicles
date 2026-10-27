@@ -165,8 +165,8 @@
   function renderStory() {
     if (state.mode === "explore") {
       storyHost.innerHTML =
-        '<p class="kicker">自由探索</p><h2>118 格，点开就能核对</h2>' +
-        "<p class=\"body\">搜索符号、中文名或英文名。焰色和谱线只在有文献时出现；没有标准原子量，就写无，不拿质量数冒充。</p>";
+        '<p class="kicker">自由探索</p><h2>点开任意一格核对</h2>' +
+        "<p class=\"body\">可搜符号、中文名或英文名。焰色和谱线只在有文献时出现；没有标准原子量就写无，不拿质量数冒充。</p>";
       playEnter(storyHost);
       return;
     }

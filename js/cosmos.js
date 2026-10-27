@@ -46,8 +46,8 @@
     canvas.style.width = innerWidth + "px";
     canvas.style.height = innerHeight + "px";
     buildNebula();
-    var n = Math.round((innerWidth * innerHeight) / 5200);
-    n = Math.max(240, Math.min(620, n));
+    var n = Math.round((innerWidth * innerHeight) / 7800);
+    n = Math.max(140, Math.min(360, n));
     var r = rng(20261018);
     stars = [];
     for (var i = 0; i < n; i++) {
@@ -75,7 +75,7 @@
     ctx.clearRect(0, 0, W, H);
     if (nebula) {
       /* 星云也跟着指针走，但幅度更小、方向相反，形成第二层深度 */
-      ctx.drawImage(nebula, -W * 0.02 + tx * 22, -H * 0.02 + ty * 16, W * 1.04, H * 1.04);
+      ctx.drawImage(nebula, -W * 0.01 + tx * 8, -H * 0.01 + ty * 6, W * 1.02, H * 1.02);
     }
     for (var i = 0; i < stars.length; i++) {
       var s = stars[i];
@@ -92,8 +92,8 @@
     px = (e.clientX / innerWidth - 0.5) * 2;
     py = (e.clientY / innerHeight - 0.5) * 2;
     canvas.style.transform =
-      "perspective(1100px) rotateY(" + (px * 1.1).toFixed(2) + "deg) rotateX(" +
-      (-py * 0.8).toFixed(2) + "deg) scale(1.03)";
+      "perspective(1100px) rotateY(" + (px * 0.35).toFixed(2) + "deg) rotateX(" +
+      (-py * 0.25).toFixed(2) + "deg) scale(1.01)";
   }, { passive: true });
   addEventListener("resize", resize, { passive: true });
 
