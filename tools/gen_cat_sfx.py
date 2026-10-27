@@ -1,99 +1,144 @@
-﻿"""Generate 10 category click SFX for stardust-chronicles (ui.select by category)."""
+﻿"""Regenerate 10 category clicks with more distinct, less synthetic-identical feel."""
 from __future__ import annotations
-import math, wave, struct
+import math, wave, struct, random
 from pathlib import Path
 
 SR = 48000
 OUT = Path("assets/sfx")
 
-# name -> (dur_s, synth_kind, params)
-# keep paper/museum: short, dry, no game-gun tails
-SPECS = {
-    "alkali":     (0.14, "tick",   dict(f0=2100, f1=900, noise=0.35, bright=1.0)),
-    "alkaline":   (0.15, "tick",   dict(f0=1600, f1=700, noise=0.28, bright=0.85)),
-    "transition": (0.22, "metal",  dict(f0=620,  harm=(1.0, 1.52, 2.01), decay=18)),
-    "post":       (0.20, "metal",  dict(f0=420,  harm=(1.0, 1.41, 1.9), decay=22)),
-    "metalloid":  (0.16, "glass",  dict(f0=1400, f1=2800, decay=28)),
-    "nonmetal":   (0.13, "wood",   dict(f0=380, noise=0.55, decay=35)),
-    "halogen":    (0.12, "tick",   dict(f0=3200, f1=1400, noise=0.45, bright=1.2)),
-    "noble":      (0.16, "air",    dict(f0=900, noise=0.7, decay=20)),
-    "lanthanide": (0.18, "shimmer",dict(f0=780, f1=1560, decay=24)),
-    "actinide":   (0.17, "hollow", dict(f0=220, noise=0.5, decay=16)),
-}
-
 def clamp(x, lo=-1.0, hi=1.0):
     return lo if x < lo else hi if x > hi else x
 
-def env_exp(i, n, decay):
-    return math.exp(-decay * i / n)
+def noise(i, seed):
+    x = (i * 1103515245 + seed) & 0x7fffffff
+    return x / 0x7fffffff * 2 - 1
 
-def synth(kind, dur, p):
-    n = max(64, int(SR * dur))
-    out = []
-    for i in range(n):
-        t = i / SR
-        e = env_exp(i, n, p.get("decay", 25))
-        x = 0.0
-        if kind == "tick":
-            # band-limited noise + quick sine sweep
-            noise = (math.sin(i * 12.9898) * 43758.5453) % 1.0
-            noise = noise * 2 - 1
-            f = p["f0"] + (p["f1"] - p["f0"]) * (i / n)
-            x = 0.55 * math.sin(2 * math.pi * f * t) * e
-            x += p["noise"] * noise * e * e
-            x *= p.get("bright", 1.0)
-        elif kind == "metal":
-            for k, h in enumerate(p["harm"]):
-                a = 0.45 / (k + 1)
-                x += a * math.sin(2 * math.pi * p["f0"] * h * t) * env_exp(i, n, p["decay"] * (1 + 0.15 * k))
-            # tiny noise transient
-            noise = ((i * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff * 2 - 1
-            x += 0.12 * noise * env_exp(i, n, 60)
-        elif kind == "glass":
-            x = 0.5 * math.sin(2 * math.pi * p["f0"] * t) * e
-            x += 0.28 * math.sin(2 * math.pi * p["f1"] * t) * env_exp(i, n, p["decay"] * 1.3)
-            noise = ((i * 214013 + 2531011) & 0x7fffffff) / 0x7fffffff * 2 - 1
-            x += 0.08 * noise * env_exp(i, n, 50)
-        elif kind == "wood":
-            noise = ((i * 1664525 + 1013904223) & 0x7fffffff) / 0x7fffffff * 2 - 1
-            x = 0.55 * math.sin(2 * math.pi * p["f0"] * t) * e
-            x += p["noise"] * noise * env_exp(i, n, 45)
-        elif kind == "air":
-            noise = ((i * 214013 + 2531011) & 0x7fffffff) / 0x7fffffff * 2 - 1
-            # soft highpassed-ish noise + faint tone
-            x = p["noise"] * noise * e
-            x += 0.18 * math.sin(2 * math.pi * p["f0"] * t) * e
-        elif kind == "shimmer":
-            x = 0.4 * math.sin(2 * math.pi * p["f0"] * t) * e
-            x += 0.25 * math.sin(2 * math.pi * p["f1"] * t + 0.7) * env_exp(i, n, p["decay"] * 1.1)
-            x += 0.12 * math.sin(2 * math.pi * (p["f0"] * 2.7) * t) * env_exp(i, n, p["decay"] * 1.5)
-        elif kind == "hollow":
-            noise = ((i * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff * 2 - 1
-            x = 0.5 * math.sin(2 * math.pi * p["f0"] * t) * e
-            x += 0.2 * math.sin(2 * math.pi * p["f0"] * 2.1 * t) * env_exp(i, n, p["decay"] * 1.4)
-            x += p["noise"] * 0.35 * noise * env_exp(i, n, 30)
-        out.append(clamp(x * 0.72))
-    # peak normalize ~0.85
-    peak = max(abs(v) for v in out) or 1.0
-    scale = 0.85 / peak
-    return [v * scale for v in out]
-
-def write_wav(path: Path, samples):
-    path.parent.mkdir(parents=True, exist_ok=True)
+def write_wav(path, samples):
+    peak = max(abs(v) for v in samples) or 1.0
+    scale = 0.82 / peak
     with wave.open(str(path), "w") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(SR)
-        frames = b"".join(struct.pack("<h", int(clamp(s) * 32767)) for s in samples)
-        w.writeframes(frames)
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+        w.writeframes(b"".join(struct.pack("<h", int(clamp(s*scale)*32767)) for s in samples))
 
-def main():
-    OUT.mkdir(parents=True, exist_ok=True)
-    for cat, (dur, kind, params) in SPECS.items():
-        samples = synth(kind, dur, params)
-        path = OUT / f"cat-{cat}.wav"
-        write_wav(path, samples)
-        print(f"wrote {path} ({len(samples)/SR:.3f}s)")
+def synth_alkali(n):
+    # warm crackle tick
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-28*i/n)
+        f=1950 + (780-1950)*(i/n)
+        x=0.55*math.sin(2*math.pi*f*t)*e
+        x+=0.38*noise(i,17)*e*e
+        out.append(x)
+    return out
 
-if __name__ == "__main__":
-    main()
+def synth_alkaline(n):
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-24*i/n)
+        f=1350+(620-1350)*(i/n)
+        x=0.5*math.sin(2*math.pi*f*t)*e
+        x+=0.22*math.sin(2*math.pi*f*0.5*t)*e
+        x+=0.25*noise(i,31)*e*e
+        out.append(x)
+    return out
+
+def synth_transition(n):
+    out=[]
+    for i in range(n):
+        t=i/SR
+        x=0
+        for k,h in enumerate((1.0,1.498,2.003,2.51)):
+            e=math.exp(-(16+k*6)*i/n)
+            x+=(0.42/(k+1))*math.sin(2*math.pi*540*h*t)*e
+        x+=0.1*noise(i,7)*math.exp(-55*i/n)
+        out.append(x)
+    return out
+
+def synth_post(n):
+    out=[]
+    for i in range(n):
+        t=i/SR
+        x=0
+        for k,h in enumerate((1.0,1.38,1.86)):
+            e=math.exp(-(20+k*7)*i/n)
+            x+=(0.4/(k+1))*math.sin(2*math.pi*360*h*t)*e
+        x+=0.14*noise(i,99)*math.exp(-40*i/n)
+        out.append(x)
+    return out
+
+def synth_metalloid(n):
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-26*i/n)
+        x=0.48*math.sin(2*math.pi*1520*t)*e
+        x+=0.3*math.sin(2*math.pi*3040*t+0.4)*math.exp(-34*i/n)
+        x+=0.06*noise(i,44)*math.exp(-50*i/n)
+        out.append(x)
+    return out
+
+def synth_nonmetal(n):
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-32*i/n)
+        x=0.42*math.sin(2*math.pi*290*t)*e
+        x+=0.55*noise(i,123)*math.exp(-42*i/n)
+        out.append(x)
+    return out
+
+def synth_halogen(n):
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-36*i/n)
+        f=3400+(1600-3400)*(i/n)
+        x=0.58*math.sin(2*math.pi*f*t)*e
+        x+=0.42*noise(i,5)*e*e
+        out.append(x)
+    return out
+
+def synth_noble(n):
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-18*i/n)
+        x=0.62*noise(i,77)*e
+        x+=0.16*math.sin(2*math.pi*880*t)*e
+        out.append(x)
+    return out
+
+def synth_lanthanide(n):
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-22*i/n)
+        x=0.36*math.sin(2*math.pi*700*t)*e
+        x+=0.28*math.sin(2*math.pi*1400*t+0.8)*math.exp(-28*i/n)
+        x+=0.18*math.sin(2*math.pi*2100*t+1.2)*math.exp(-34*i/n)
+        out.append(x)
+    return out
+
+def synth_actinide(n):
+    out=[]
+    for i in range(n):
+        t=i/SR; e=math.exp(-15*i/n)
+        x=0.48*math.sin(2*math.pi*180*t)*e
+        x+=0.22*math.sin(2*math.pi*360*t)*math.exp(-20*i/n)
+        x+=0.28*noise(i,201)*math.exp(-25*i/n)
+        out.append(x)
+    return out
+
+SPECS = {
+  "alkali": (0.13, synth_alkali),
+  "alkaline": (0.14, synth_alkaline),
+  "transition": (0.20, synth_transition),
+  "post": (0.18, synth_post),
+  "metalloid": (0.15, synth_metalloid),
+  "nonmetal": (0.12, synth_nonmetal),
+  "halogen": (0.11, synth_halogen),
+  "noble": (0.15, synth_noble),
+  "lanthanide": (0.17, synth_lanthanide),
+  "actinide": (0.16, synth_actinide),
+}
+
+for cat,(dur,fn) in SPECS.items():
+  n=max(64,int(SR*dur))
+  path=OUT/f"cat-{cat}.wav"
+  write_wav(path, fn(n))
+  print("wrote", path.name, f"{dur:.2f}s")

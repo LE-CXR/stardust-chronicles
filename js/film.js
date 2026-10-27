@@ -257,7 +257,7 @@ function showListenHint() {
   try { if (sessionStorage.getItem("stardust-hint") === "1") return; } catch (e) {}
   const tip = document.createElement("div");
   tip.className = "listen-hint";
-  tip.innerHTML = "<i></i>悬浮任意元素，能听见它的光谱";
+  tip.innerHTML = "<i></i>悬停格子可听谱线；点击按族类发声";
   document.body.appendChild(tip);
   requestAnimationFrame(() => tip.classList.add("is-on"));
   let gone = false;
