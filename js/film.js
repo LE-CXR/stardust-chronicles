@@ -100,7 +100,7 @@ function buildScene(els) {
     scene.add(tile); scene.add(halo);
     const th = rnd() * Math.PI * 2, ph = Math.acos(2 * rnd() - 1), r = 200 + rnd() * 320;
     return {
-      z: el.z, symbol: el.symbol, tile, halo,
+      z: el.z, symbol: el.symbol, category: el.category, tile, halo,
       from: new THREE.Vector3(r * Math.sin(ph) * Math.cos(th), r * Math.sin(ph) * Math.sin(th) * 0.7, r * Math.cos(ph)),
       to: new THREE.Vector3((el.col - OXC) * SX, (OYC - el.row) * SY, 0),
       at: arrival(el.z), dur: flight(el.z),
@@ -344,7 +344,7 @@ function playElement(z, opts) {
   /* 点选：SFX-SPEC 角色 WAV 与金边同帧；悬浮：极轻短声，禁止扫表叠成背景乐 */
   if (opts.select) {
     duckFilmBed(480);
-    au.playSelect(n.symbol);
+    au.playSelect(n.symbol, { category: n.category });
     return;
   }
   try { au.stopAll(); } catch (e) {}

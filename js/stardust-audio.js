@@ -3,30 +3,47 @@
  *
  * 谱线和弦：把可见光谱整段等比搬进可听频段（浏览器实时合成）。
  *     f(Hz) = 110 * 780 / λ(nm)          780 nm → 110 Hz，380 nm → 225.8 Hz
- * 点选 hit：按 SFX-SPEC 角色锚点播预载 WAV（纸质仪器 / 轻点选）。
- *     ui.select      → select-click.wav
- *     ui.select.na   → na-flame-tick.wav（Na；碱金属 Li/K/Rb/Cs 同变体）
- *     ui.select.au   → au-metal-hit.wav
- *     ui.select.empty→ og-hollow-tap.wav（无 NIST 可见强线，如 Og）
+ * 点选 hit：按元素类别共 10 种预载 WAV（同类同声）。
+ *     alkali alkaline transition post metalloid
+ *     nonmetal halogen noble lanthanide actinide
+ *     → assets/sfx/cat-<category>.wav
  *
  * 用法：
  *     const au = new StardustAudio();
  *     au.setSpectra(spectraJson);
  *     au.preload();                      // 拉取短 WAV；缺文件静默 + console.warn
  *     au.unlock();                       // 必须在一次用户手势里调用
- *     au.playSelect("Na");               // 与金边 rim / 开档同帧
+ *     au.playSelect("Na", { category: "alkali" });  // 与金边 rim / 开档同帧
  *     au.playChord("Na");                // 仅谱线层
  */
 (function (root) {
   "use strict";
   var F_RED = 110, LAM_RED = 780, RATIO = F_RED * LAM_RED;
   var DEBOUNCE_MS = 80;
-  /* 碱金属（有可见线者）共用 Na 焰色 tick；Fr 无谱线走 empty */
-  var ALKALI_NA_TICK = { Li: 1, Na: 1, K: 1, Rb: 1, Cs: 1 };
+  var CAT_SFX = {
+    alkali: "cat-alkali",
+    alkaline: "cat-alkaline",
+    transition: "cat-transition",
+    post: "cat-post",
+    metalloid: "cat-metalloid",
+    nonmetal: "cat-nonmetal",
+    halogen: "cat-halogen",
+    noble: "cat-noble",
+    lanthanide: "cat-lanthanide",
+    actinide: "cat-actinide"
+  };
   var SFX_FILES = {
+    "cat-alkali": "cat-alkali.wav",
+    "cat-alkaline": "cat-alkaline.wav",
+    "cat-transition": "cat-transition.wav",
+    "cat-post": "cat-post.wav",
+    "cat-metalloid": "cat-metalloid.wav",
+    "cat-nonmetal": "cat-nonmetal.wav",
+    "cat-halogen": "cat-halogen.wav",
+    "cat-noble": "cat-noble.wav",
+    "cat-lanthanide": "cat-lanthanide.wav",
+    "cat-actinide": "cat-actinide.wav",
     "select-click": "select-click.wav",
-    "na-flame-tick": "na-flame-tick.wav",
-    "au-metal-hit": "au-metal-hit.wav",
     "og-hollow-tap": "og-hollow-tap.wav"
   };
 
@@ -174,51 +191,45 @@
     return voices.length;
   };
 
-  /* 点选角色 hit（与视觉同帧）；有谱线时再叠一层和弦 */
+  var oCategoryCache = {};
+  StardustAudio.prototype._categoryOf = function (symbol) {
+    if (oCategoryCache[symbol]) return oCategoryCache[symbol];
+    var list = (root.STARDUST_ELEMENTS) || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].symbol === symbol) {
+        oCategoryCache[symbol] = list[i].category || "";
+        return oCategoryCache[symbol];
+      }
+    }
+    return "";
+  };
+
+  /* 点选 hit：按类别 10 声；有谱线时再叠一层轻和弦 */
   StardustAudio.prototype.playSelect = function (symbol, o) {
     o = o || {};
     var ctx = this.unlock();
     if (!ctx) return null;
     this.preload();
 
+    var cat = o.category || this._categoryOf(symbol) || "";
+    var sampleKey = CAT_SFX[cat] || "select-click";
+    var eventId = "ui.select." + (cat || "default");
     var hasLines = chordOf(this.spectra, symbol).length > 0;
-    var eventId, sampleKey, hitGain, chordGain;
-
-    if (!hasLines) {
-      eventId = "ui.select.empty";
-      sampleKey = "og-hollow-tap";
-      hitGain = o.gain === undefined ? 0.36 : o.gain;
-      chordGain = 0;
-    } else if (symbol === "Au") {
-      eventId = "ui.select.au";
-      sampleKey = "au-metal-hit";
-      hitGain = o.gain === undefined ? 0.46 : o.gain;
-      chordGain = 0.12;
-    } else if (ALKALI_NA_TICK[symbol]) {
-      eventId = "ui.select.na";
-      sampleKey = "na-flame-tick";
-      hitGain = o.gain === undefined ? 0.42 : o.gain;
-      chordGain = 0.14;
-    } else {
-      eventId = "ui.select";
-      sampleKey = "select-click";
-      hitGain = o.gain === undefined ? 0.40 : o.gain;
-      chordGain = 0.24;
-    }
+    var hitGain = o.gain === undefined ? 0.42 : o.gain;
+    var chordGain = hasLines ? (o.chordGain === undefined ? 0.14 : o.chordGain) : 0;
 
     if (!this._debounceOk(eventId)) return null;
 
     var played = this.playBuffer(sampleKey, { gain: hitGain });
     if (!played) {
-      /* 样本缺失：回退到既有 procedural，仍不假装播空文件 */
-      if (sampleKey === "og-hollow-tap") this.playEmpty({ gain: Math.min(0.11, hitGain * 0.3) });
-      else this.playUiClick({ gain: Math.min(0.14, hitGain * 0.35) });
+      /* 样本缺失：回退 procedural，不假装播空文件 */
+      this.playUiClick({ gain: Math.min(0.14, hitGain * 0.35) });
     }
 
     if (hasLines && chordGain > 0) {
       this.playChord(symbol, {
         dur: o.dur || 1.6,
-        gain: o.chordGain === undefined ? chordGain * 0.75 : o.chordGain
+        gain: chordGain * 0.75
       });
     }
     return eventId;
