@@ -8,13 +8,22 @@
 - 禁止空 `<Audio>` 假装播放；文件缺失就静默并记日志。
 - 音量默认保守；用户「声音」面板可调。
 
-角色锚点（本片与站点共用）：
+角色锚点（成片与站点共用）——**点击按族类 10 种**：
 
-| 角色 | 声音性格 | 典型时长 | 样例文件（demo） |
+| 族类 `category` | 听感性格 | 建议时长 | 样本文件 |
 | --- | --- | --- | --- |
-| **Na** | 暖黄焰色 tick：偏暖中频 + 极轻 crackle | 120–160 ms | `assets/sfx/na-flame-tick.wav` |
-| **Au** | 金属软击：软槌敲薄金，谐波但不刺耳 | 280–360 ms | `assets/sfx/au-metal-hit.wav` |
-| **Og / empty** | 短空心敲：木/陶空洞感，无亮尾 | 120–180 ms | `assets/sfx/og-hollow-tap.wav` |
+| alkali | 暖橙焰色 tick | 120–160 ms | `assets/sfx/cat-alkali.wav` |
+| alkaline | 略低暖 tick | 130–160 ms | `assets/sfx/cat-alkaline.wav` |
+| transition | 软金属一击 | 180–240 ms | `assets/sfx/cat-transition.wav` |
+| post | 钝金属轻敲 | 160–220 ms | `assets/sfx/cat-post.wav` |
+| metalloid | 玻璃质中频 | 140–180 ms | `assets/sfx/cat-metalloid.wav` |
+| nonmetal | 木质/空气短触 | 110–150 ms | `assets/sfx/cat-nonmetal.wav` |
+| halogen | 锐亮 tick | 100–140 ms | `assets/sfx/cat-halogen.wav` |
+| noble | 气态空灵轻叩 | 140–180 ms | `assets/sfx/cat-noble.wav` |
+| lanthanide | 暗色微闪 | 150–200 ms | `assets/sfx/cat-lanthanide.wav` |
+| actinide | 低沉空洞 | 140–180 ms | `assets/sfx/cat-actinide.wav` |
+
+生成：`python tools/gen_cat_sfx.py`
 
 ---
 
@@ -22,10 +31,9 @@
 
 | 事件 ID | 触发时机 | 声音性格 | 时长 ms | 音量建议 | 备注 |
 | --- | --- | --- | --- | --- | --- |
-| `ui.select` | 点击周期表格子，金边 rim 亮起的同一帧 | dry select click（短高频双音 + 瞬态） | 90–130 | 0.35–0.45 | 通用；碱金属可用 Na 变体 |
-| `ui.select.na` | 选中 **Na**（或碱金属 / 焰色相关格） | **Na** 暖黄焰色 tick | 120–160 | 0.38–0.48 | 与焰色卡片同帧 |
-| `ui.select.au` | 选中 **Au**（或贵金属强调） | **Au** metallic soft hit | 280–340 | 0.40–0.52 | 勿用刺耳 clang |
-| `ui.select.empty` | 选中无标准原子量 / 无谱线格（如 **Og**） | **Og** hollow tap | 120–180 | 0.32–0.42 | 「留空不假造」语气 |
+| `ui.select.<category>` | 点选周期表格子，金边 rim 同帧 | 对应 `cat-<category>.wav`（同族同声，共 10 种） | 100–240 | 0.34–0.44 | category 见上表；缺样本回落 procedural |
+| `ui.select` | 未知族类兜底 | dry select click / `select-click.wav` | 90–130 | 0.35–0.45 | 仅 map 缺失时 |
+| `ui.select.empty` | 无 category 兜底 | Og hollow / procedural empty | 120–180 | 0.32–0.42 | 正常点选走族类音 |
 | `ui.deselect` | 关闭档案 / 取消选中 | 更轻的 reverse-tick 或 半音量 select | 60–90 | 0.18–0.28 | 勿喧宾夺主 |
 | `ui.hover`（可选） | 桌面悬停格子 | 极轻 tick（几乎无 crackle） | 40–70 | 0.08–0.14 | 默认可关；移动端勿播 |
 | `panel.open` | 元素档案面板滑入完成点 | soft whoosh（短）+ 轻 click | 180–260 | 0.22–0.32 | whoosh 勿盖字 |
@@ -49,7 +57,7 @@
 1. 预加载上述短 WAV（或从同源 procedural 生成后缓存）；首次手势后再 `AudioContext.resume()`。
 2. 同一事件 80ms 内去抖，避免扫表连响。
 3. 影片床轨参考：`assets/sfx/demo-30s-bed.wav`（hits 已钉在 0.85 / 2.85 / 6.00 / 9.20 / 14.00 / 22.00 / 26.00 / 27.85 s）。
-4. 重新生成样例：`python3 scripts/gen_sfx.py`。
+4. 重新生成样例：`python tools/gen_cat_sfx.py`（10 族点击）。
 5. 禁止用长垫乐盖住 hits；若加 BGM，侧链/闪避 hits，或把 BGM 压到 hits 下 −12 dB 以上。
 
 ---
