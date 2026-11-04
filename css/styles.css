@@ -1070,6 +1070,7 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
   background: radial-gradient(80% 70% at 50% 44%, #121722 0%, #080b11 62%, #05070c 100%);
   opacity: 0; pointer-events: none; transition: opacity .32s ease;
 }
+body:has(.atom-focus.is-on) { overflow: hidden; }
 .atom-focus.is-on { opacity: 1; pointer-events: auto; }
 .af-inner {
   width: min(1120px, 92vw); height: min(760px, 88vh);
@@ -1090,7 +1091,11 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
   display: flex; align-items: center; justify-content: space-between;
   padding-top: 10px; border-top: 1px solid rgba(228, 194, 122, .12);
 }
-.af-shells { font: 500 13px/1.6 "Consolas", ui-monospace, monospace; letter-spacing: .18em; color: rgba(228, 194, 122, .85); }
+.af-shells {
+  flex: 1 1 auto; min-width: 0;
+  font: 500 13px/1.6 "Consolas", ui-monospace, monospace;
+  letter-spacing: .18em; color: rgba(228, 194, 122, .85);
+}
 .af-key { margin-left: 20px; letter-spacing: .08em; color: rgba(242, 234, 217, .62); }
 .af-key i {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%;
@@ -1101,9 +1106,19 @@ dialog .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 .af-close {
   border: 1px solid rgba(228, 194, 122, .35); background: transparent;
   color: #e4c27a; border-radius: 999px; padding: 7px 20px;
+  flex: 0 0 auto; white-space: nowrap;
   font: inherit; font-size: 12px; letter-spacing: .18em; cursor: pointer;
 }
 .af-close:hover { background: rgba(228, 194, 122, .12); }
+@media (max-width: 560px) {
+  .af-inner { padding: 18px 16px 14px; }
+  .af-head { flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+  .af-sym { font-size: 36px; }
+  .af-name { flex: 1 1 0; min-width: 0; font-size: 13px; line-height: 1.45; letter-spacing: .04em; }
+  .af-note { flex: 1 1 100%; margin-left: 0; font-size: 10px; letter-spacing: .12em; }
+  .af-foot { gap: 10px; }
+  .af-shells { font-size: 11px; letter-spacing: .1em; }
+}
 @keyframes afUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }

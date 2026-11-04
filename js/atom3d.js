@@ -770,6 +770,8 @@ function openFocus() {
   const el = cell ? BY_Z.get(Number(cell.dataset.z)) : null;
   if (!el) return;
   focused = true;
+  focusLayer.querySelector(".af-note").textContent =
+    matchMedia("(pointer: coarse)").matches ? "拖动旋转 · 点按关闭" : "拖动旋转 · Esc 关闭";
   focusLayer.querySelector(".af-sym").textContent = el.symbol;
   const iso = ISO && ISO[String(el.z)];
   focusLayer.querySelector(".af-name").textContent = el.nameZh + " · " + (el.nameEn || "") +
