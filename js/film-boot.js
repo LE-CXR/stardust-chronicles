@@ -3,6 +3,24 @@
 (function () {
   var queue = [];
   var fileMode = location.protocol === "file:";
+  var recovered = false;
+
+  function fallbackToArchive() {
+    if (recovered) return;
+    recovered = true;
+    var film = document.getElementById("film");
+    if (film) {
+      film.classList.add("is-out");
+      film.hidden = true;
+    }
+    document.body.classList.add("archive-in");
+    var list = queue;
+    queue = [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].onDone) list[i].onDone();
+    }
+  }
+
   window.StardustIntro = {
     start: function (opts) {
       if (fileMode) {
@@ -17,6 +35,19 @@
     advance: function () { if (window.__filmAdvance) window.__filmAdvance(); },
     skip: function () { if (window.__filmSkip) window.__filmSkip(); }
   };
+
+  var play = document.getElementById("film-play");
+  if (play) {
+    play.disabled = true;
+    play.setAttribute("aria-disabled", "true");
+  }
+  var direct = document.getElementById("film-direct");
+  if (direct) {
+    direct.addEventListener("click", function () {
+      if (!window.__filmStart) fallbackToArchive();
+    });
+  }
+
   window.__filmDrain = function () {
     var list = queue; queue = [];
     for (var i = 0; i < list.length; i++) window.__filmStart && window.__filmStart(list[i]);
@@ -26,6 +57,7 @@
       var s = document.createElement("script");
       s.type = "module";
       s.src = src;
+      s.onerror = fallbackToArchive;
       document.head.appendChild(s);
     });
   }

@@ -571,7 +571,7 @@
 
   function startIntro() {
     window.scrollTo(0, 0);
-    document.body.classList.remove("revealed", "instant");
+    document.body.classList.remove("revealed", "instant", "archive-in");
     try {
       window.StardustIntro.start({
         getTargets,
@@ -618,7 +618,9 @@
     document.getElementById("intro-skip").addEventListener("click", () => window.StardustIntro.skip());
     if (fromHash || reduce) {
       document.getElementById("intro").hidden = true;
-      document.body.classList.add("revealed", "instant");
+      var film = document.getElementById("film");
+      if (film) film.hidden = true;
+      document.body.classList.add("revealed", "instant", "archive-in");
     } else {
       startIntro();
     }
